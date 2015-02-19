@@ -22,7 +22,7 @@ class Message():
 
     def process_message_text(self, remove_stopwords=True, stemming=True, remove_punctuation=True, message_tokens=[]):
         """
-        Uses NLP functionality as tokenization and stemming vom nltk to process the text
+        Uses NLP functionality as tokenization and stemming from nltk to process the text
         """
         if remove_punctuation:
             punct_tokenizer = RegexpTokenizer(r'\w{2,}')

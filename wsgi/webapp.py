@@ -2,6 +2,7 @@ import json
 from flask import Flask
 from flask import request
 from models.message import Message
+from apis.emotext import text_to_emotion
 from datetime import datetime
 app = Flask(__name__)
 
@@ -17,9 +18,10 @@ class WSGI():
         Handles a POST requests that processes a message json body.
         """
         json_data = request.get_json()
-        # cast all body data to Message object
-        message = Message(json_data['entity_name'], json_data['message'], datetime.strptime(json_data['date'], '%Y-%m-%dT%H:%M:%S'), json_data['language'])
+        # cast all body data to a Message object
+        message = Message(json_data['entity_name'], json_data['message'], json_data['date'], json_data['language'])
         # process text via Message object method that uses tokenization, stemming, punctuation removal and so on...
         message.message = message.process_message_text()
-        print message
-        return entity_name
+        text_to_emotion(message.message, message.language)
+        # dump processed data back to the client
+        return json.dumps(message.__dict__)
