@@ -3,8 +3,7 @@ import utils
 from models.message import Message
 from datetime import datetime
 
-
-def get_messages(entity_name, filepath='providers/static/whatsapp_chat.txt'):
+def get_messages(entity_name, filepath='providers/static/whatsapp_chat.txt', language='english'):
     """ 
     Reads the messaging history from a .txt file and extracts and filters
     it for a certain entity.
@@ -28,7 +27,7 @@ def get_messages(entity_name, filepath='providers/static/whatsapp_chat.txt'):
                          if re.match(r'^\n$', l) == None]
     # convert tuples into Message objects and add 2000 years to year as whatsapp notates it YY and not YYYY
     # also filters for an entity name
-    messages_list = [Message(m[6], m[7], datetime(m[2]+2000, m[1], m[0], m[3], m[4], m[5])) \
+    messages_list = [Message(m[6], m[7], datetime(m[2]+2000, m[1], m[0], m[3], m[4], m[5]).strftime('%Y-%m-%dT%H:%M:%S'), language) \
                         for m in parsed_messages \
                         if m[6] == entity_name]
     return messages_list
