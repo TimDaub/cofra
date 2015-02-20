@@ -17,7 +17,7 @@ def test_post_to_entities():
     """
     from providers.whatsapp import get_messages
     # read messages from a .txt file by using the whatsapp provider
-    messages = get_messages('Tim', '../providers/static/whatsapp_chat.txt', 'german')
+    messages = get_messages('Tim', '../providers/static/whatsapp_chat.txt', 'english')
     for message in messages:
         r = requests.post(base_url + '/entities/' + message.entity_name, \
             data=json.dumps(message.__dict__), \

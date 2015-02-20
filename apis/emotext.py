@@ -9,15 +9,15 @@ This is done by algorithms searching the graph structure of concept net for
 connections between a specific token and the entity 'Emotion'.
 """
 
-from concept_net_client import lookup
 from models.node import Node
-from utils import extr_from_concept_net_edge
 
 LANG_TO_CODE = {
     'english': 'en',
     'german': 'de',
     'french': 'fr'
 }
+
+MAX_DEPTH = 2
 
 def lang_name_to_code(lang_name='english'):
     """
@@ -47,37 +47,22 @@ def text_to_emotion(token_list, language='english'):
     lang_code = lang_name_to_code(language)
     if len(token_list) < 1: 
         raise Exception('The token_list must contain at least one word.')
-    return [analyze_token(t, lang_code) for t in token_list]
+    return [build_graph(Node(t, lang_code, 'c')) for t in token_list]
 
-def analyze_token(token, lang_code='en', type='c'):
+def build_graph(node, parent_node=None, depth=0):
     """
-    Looks up the token on ConceptNet and does a graph search for finding relations
-    to any emotions.
+    This function builds a graph structure by doing a lookup on ConceptNet's
+    web-API.
+
+    For the first call, only a Node object is submitted.
+    Recursively, a further node can be submitted to the function in combination
+    with a parent node to lookup deeper.
+
+    The function stops, as soon as the MAX_DEPTH constant has passed.
     """
-    # lookup token via ConceptNet web-API
-    token_res = lookup(type, lang_code, token)
-    # if result has more than 0 edges continue
-    if token_res['numFound'] > 0:
-        edges = []
-        # for every edge, try converting it to a Node object that 
-        # can be processed further
-        for e in token_res['edges']:
-            # extract basic information from the 'end' key of an edge
-            # it contains, type, lang_code and the name of the node
-            basic = extr_from_concept_net_edge(e['end'])
-            # instantiate a Node object from this information and append it to a list of edges
-            edges.append(Node(basic['name'], basic['lang_code'], basic['type'], e['rel'], e['weight'], []))
-        # also convert the actual token into a node and add
-        # the previously looked up edges to it
-        token_node = Node(token, lang_code, type, None, None, edges)
-        return token_node
-    else:
-        # if no edges found on token, raise exception
-        raise Exception('Token has no connecting edges.')
-
-
-
-
-
-
-
+    if depth >= MAX_DEPTH:
+        return None
+    node.edge_lookup()
+    for edge in node.edges:
+        build_graph(edge, node, depth+1)
+    return node
