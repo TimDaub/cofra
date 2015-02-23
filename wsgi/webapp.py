@@ -23,7 +23,7 @@ class WSGI():
         # cast all body data to a Message object
         message = Message(json_data['entity_name'], json_data['message'], json_data['date'], json_data['language'])
         # process text via Message object method that uses tokenization, stemming, punctuation removal and so on...
-        message.message = message.process_message_text()
+        message.message = message.process_message_text(stemming=False)
         message_node = text_to_emotion(message.message, message.language)
         # dump processed data back to the client
-        return json.dumps(message_node[0], cls=NodeEncoder)
+        return json.dumps(message_node, cls=NodeEncoder)

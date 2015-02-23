@@ -25,4 +25,6 @@ However, `ntlk` still needs language-specific files. These can be downloaded by 
 We recommend downloading all dependencies.
 
 
+docker run -it -p 80:10053 rspeer/conceptnet-web
+
 

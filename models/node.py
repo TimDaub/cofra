@@ -3,13 +3,14 @@ from apis.concept_net_client import lookup
 from utils import extr_from_concept_net_edge
 
 class Node():
-    def __init__(self, name, lang_code='en', type='c', rel=None, weight=0, edges=[]):
+    def __init__(self, name, lang_code='en', type='c', rel=None, score=0, edges=[], parent=None):
         self.name = name
         self.lang_code = lang_code
         self.type = type
         self.edges = edges
         self.rel = rel
-        self.weight = weight
+        self.score = score
+        self.parent = parent
 
     def __repr__(self):
         """
@@ -17,7 +18,7 @@ class Node():
         """
         return str(self.__dict__)
 
-    def edge_lookup(self):
+    def edge_lookup(self, used_names, lang_code='en'):
         """
         Uses ConceptNet's lookup function to search for all related
         nodes to this one.
@@ -30,7 +31,7 @@ class Node():
         if self.name == None:
             raise Exception('Cannot do edge_lookup without nodes name.')
         # lookup token via ConceptNet web-API
-        token_res = lookup(self.type, self.lang_code, self.name)
+        token_res = lookup(self.type, self.lang_code, self.name).result().json()
         # if result has more than 0 edges continue
         if token_res['numFound'] > 0:
             edges = []
@@ -39,9 +40,16 @@ class Node():
             for e in token_res['edges']:
                 # extract basic information from the 'end' key of an edge
                 # it contains, type, lang_code and the name of the node
-                basic = extr_from_concept_net_edge(e['end'])
+                basic_start = extr_from_concept_net_edge(e['start'])
+                basic_end = extr_from_concept_net_edge(e['end'])
                 # instantiate a Node object from this information and append it to a list of edges
-                edges.append(Node(basic['name'], basic['lang_code'], basic['type'], e['rel'], e['weight'], []))
+                # print basic_start['name'] + ' --> ' + e['rel'] + ' --> ' + basic_end['name']
+                if basic_end['name'] != self.name:
+                    if basic_end['name'] not in used_names and basic_end['lang_code'] == lang_code:
+                        edges.append(Node(basic_end['name'], basic_end['lang_code'], basic_end['type'], e['rel'], e['score'], [], self))
+                else:
+                    if basic_start['name'] not in used_names and basic_start['lang_code'] == lang_code:
+                        edges.append(Node(basic_start['name'], basic_start['lang_code'], basic_start['type'], e['rel'], e['score'], [], self))
             # if all edges have been processed, add them to the current object
             self.edges = edges
         else:

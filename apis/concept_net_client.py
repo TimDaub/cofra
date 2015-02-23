@@ -17,6 +17,7 @@ This wrapper has been portet to ConceptNet5 by Tim Daubenschuetz
 """
 
 import urllib, urllib2
+from requests_futures.sessions import FuturesSession
 
 try:
     import json
@@ -26,7 +27,7 @@ except:
 SERVER_URL = 'http://conceptnet5.media.mit.edu'
 API_URL = 'http://conceptnet5.media.mit.edu/data'
 CLIENT_VERSION = '1'
-CONCEPT_NET_VERSION = '5.3'
+CONCEPT_NET_VERSION = '5.2'
 TYPES = {
     'assertion': 'a',
     'concept': 'c',
@@ -70,7 +71,7 @@ def lookup(type, language, key):
         raise Exception('Type must be specified to request the web api.')
     if len(type) > 1: 
         type = from_name_to_type(type)
-    return _get_json(type, language, key)
+    return _get_json(type, language, key.lower())
 
 def from_name_to_type(type='concept'):
     try:
@@ -225,8 +226,10 @@ def _get_json(*url_parts):
     """
     This method has been updated and now uses ConceptNet5 syntax to access the web-API
     """
+    session = FuturesSession()
     url = API_URL + '/' + CONCEPT_NET_VERSION + '/' + '/'.join(urllib2.quote(p.encode('utf-8')) for p in url_parts)
-    return json.loads(_get_url(url))
+    print 'Looking up: ' + url
+    return session.get(url)
 
 def _extend_url(old_url, *url_parts):
     url = old_url + '/'.join(urllib2.quote(str(p)) for p in url_parts) + '/'
