@@ -7,9 +7,9 @@ To enable programming-language-indenpendent usage, Emotext's interface is provid
 ## Automatic installation
 Emotext uses `pip` for dependency management. To install all required dependencies, you simply run:
 
-        pip install -r requirements.txt
+    pip install -r requirements.txt
 
-Additionally, you'll still need to download `nltk`'s language-specific files.
+Additionally, you'll still need to download `nltk`'s [language-specific files](#downloading-nltks-language-specific-files).
 
 ## Manual installation
 Python3 is required, as well as `pip` for installing dependencies.
@@ -22,7 +22,7 @@ Furthermore, `ntlk` is used for natural language processing. It can also be inst
 
     pip install nltk
 
-However, `ntlk` still needs language-specific files.
+However, `ntlk` still needs [language-specific files](#downloading-nltks-language-specific-files).
 
 ## Downloading nltk's language specific files
 Enter Python's IDE by typing `python` in your terminal and run the following commands: 
@@ -38,16 +38,15 @@ Through path finding, emotext searches an arbitrary number of levels for connect
 This process requires *a lot* of lookups, which is why we recommend hosting a local instance of conceptnet5 instead of using the web-API.
 
 A detailed installation tutorial on how to set up docker and conceptnet5 can be found [here](https://github.com/commonsense/conceptnet5/wiki/Docker).
-
 However we will still go through the installation process here:
 
-1. [Install docker (Mac OS X)](https://docs.docker.com/installation/mac/). Make sure, that you're using a bash shell, because otherwise the installation will probably fail at some point.
-2. (Increase your virtual machine's HD)[https://docs.docker.com/articles/b2d_volume_resize/] up to 100-150 GB of storage.
-3. Pull conceptnet5-web from docker's repositories: `sudo docker run rspeer/conceptnet-web:5.3`
+1. [Install docker (Mac OS X)](https://docs.docker.com/installation/mac/). Make sure, that you're using a bash shell, otherwise the installation will probably fail at some point.
+2. [Increase your virtual machine's HD](https://docs.docker.com/articles/b2d_volume_resize/) up to 100-150 GB of storage.
+3. Pull `conceptnet5-web from docker's repositories: `sudo docker run rspeer/conceptnet-web:5.3`
 4. In your VirtualBox GUI, setup a port forward from port 80 of your virtual machine to port 80 of your real machine (NAT Interface in the tab "Network")
 5. Run the application with a port forward from 10053 to 80, like this: `docker run -it -p 80:10053 rspeer/conceptnet-web`
 6. Now do either `boot2docker ip` or `arp -an` to find your virtual machine's ip
-7. The right one should be requestable with a common web browser and you should be set up to go.
+7. Once you were able to find the right IP, conceptnet5's web interface should appear.
 8. TODO: Config file adjustments
 
 
