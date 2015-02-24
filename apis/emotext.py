@@ -19,11 +19,11 @@ LANG_TO_CODE = {
     'french': 'fr'
 }
 
-MAX_DEPTH = 3
+MAX_DEPTH = 10
 
-MIN_SCORE = 15
+MIN_WEIGHT = 2
 
-EMOTIONS = set(["love", "anger", "fear", "hate", "happiness", "pleasant", "sadness", "pity", "shame", "ecstasy", "boredom", "love", "cry", "happy", "jealousy", "joy", "surprise", "regret", "frustration", "sorrow", "melancholy", "awe", "fear", "anger", "joy", "orgasm"])
+EMOTIONS = set(["love", "anger", "fear", "hate", "happiness", "pleasant", "sadness", "pity", "shame", "ecstasy", "boredom", "love", "cry", "happy", "jealousy", "joy", "surprise", "regret", "frustration", "sorrow", "melancholy", "awe", "fear", "anger", "joy"])
 
 def lang_name_to_code(lang_name='english'):
     """
@@ -62,7 +62,7 @@ def build_graph(queue, depth=0, used_names=OrderedSet([])):
     # print ', '.join([e.name for e in new_queue])
     for edge in queue:
         if edge.name in EMOTIONS:
-            return {edge.name: calc_nodes_score(edge)}
+            return {edge.name: calc_nodes_weight(edge)}
         else:
             new_queue.remove(edge)
             try:
@@ -70,40 +70,17 @@ def build_graph(queue, depth=0, used_names=OrderedSet([])):
             except:
                 continue
             for new_edge in edge.edges:
-                if new_edge.name not in used_names and new_edge.score > MIN_SCORE:
+                if new_edge.name not in used_names and new_edge.weight > MIN_WEIGHT:
                     used_names.add(new_edge.name)
                     new_queue.add(new_edge)
     return build_graph(new_queue, depth+1, used_names)
 
-def calc_nodes_score(node, score=[], score_num=0):
-    print node.name + ': %d' % node.score
+def calc_nodes_weight(node, weight=[], weight_num=0):
+    print node.name + ': %d' % node.weight
     if node.parent == None:
-        for i, n in enumerate(score):
-            score_num = score_num + pow(n, 1/(i+1))
-        return score_num
+        for i, n in enumerate(weight):
+            weight_num = weight_num + pow(n, 1/(i+1))
+        return weight_num
     else:
-        score.append(node.score)
-        return calc_nodes_score(node.parent, score)
-
-# def build_graph(node, parent_node=None, depth=0, used_names=Set([])):
-#     """
-#     This function builds a graph structure by doing a lookup on ConceptNet's
-#     web-API.
-
-#     For the first call, only a Node object is submitted.
-#     Recursively, a further node can be submitted to the function in combination
-#     with a parent node to lookup deeper.
-
-#     The function stops, as soon as the MAX_DEPTH constant has passed.
-#     """
-#     if depth >= MAX_DEPTH:
-#         return None
-#     # if node.name in EMOTIONS:
-#     #     return node
-#     used_names.add(node.name)
-#     node.edge_lookup(used_names, 'en')
-#     for edge in node.edges:
-#         if edge.name in EMOTIONS:
-#             return edge
-#         build_graph(edge, node, depth+1, used_names)
-#     return node
+        weight.append(node.weight)
+        return calc_nodes_weight(node.parent, weight)

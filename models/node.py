@@ -3,13 +3,13 @@ from apis.concept_net_client import lookup
 from utils import extr_from_concept_net_edge
 
 class Node():
-    def __init__(self, name, lang_code='en', type='c', rel=None, score=0, edges=[], parent=None):
+    def __init__(self, name, lang_code='en', type='c', rel=None, weight=0, edges=[], parent=None):
         self.name = name
         self.lang_code = lang_code
         self.type = type
         self.edges = edges
         self.rel = rel
-        self.score = score
+        self.weight = weight
         self.parent = parent
 
     def __repr__(self):
@@ -46,10 +46,10 @@ class Node():
                 # print basic_start['name'] + ' --> ' + e['rel'] + ' --> ' + basic_end['name']
                 if basic_end['name'] != self.name:
                     if basic_end['name'] not in used_names and basic_end['lang_code'] == lang_code:
-                        edges.append(Node(basic_end['name'], basic_end['lang_code'], basic_end['type'], e['rel'], e['score'], [], self))
+                        edges.append(Node(basic_end['name'], basic_end['lang_code'], basic_end['type'], e['rel'], e['weight'], [], self))
                 else:
                     if basic_start['name'] not in used_names and basic_start['lang_code'] == lang_code:
-                        edges.append(Node(basic_start['name'], basic_start['lang_code'], basic_start['type'], e['rel'], e['score'], [], self))
+                        edges.append(Node(basic_start['name'], basic_start['lang_code'], basic_start['type'], e['rel'], e['weight'], [], self))
             # if all edges have been processed, add them to the current object
             self.edges = edges
         else:

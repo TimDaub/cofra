@@ -24,10 +24,10 @@ try:
 except:
     import simplejson as json
 
-SERVER_URL = 'http://conceptnet5.media.mit.edu'
-API_URL = 'http://conceptnet5.media.mit.edu/data'
+SERVER_URL = 'http://192.168.59.103'
+API_URL = 'http://192.168.59.103/data'
 CLIENT_VERSION = '1'
-CONCEPT_NET_VERSION = '5.2'
+CONCEPT_NET_VERSION = '5.3'
 TYPES = {
     'assertion': 'a',
     'concept': 'c',
@@ -227,7 +227,7 @@ def _get_json(*url_parts):
     This method has been updated and now uses ConceptNet5 syntax to access the web-API
     """
     session = FuturesSession()
-    url = API_URL + '/' + CONCEPT_NET_VERSION + '/' + '/'.join(urllib2.quote(p.encode('utf-8')) for p in url_parts)
+    url = API_URL + '/' + CONCEPT_NET_VERSION + '/' + '/'.join(urllib2.quote(p.encode('utf-8')) for p in url_parts) + '?limit=10'
     print 'Looking up: ' + url
     return session.get(url)
 
