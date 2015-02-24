@@ -80,7 +80,7 @@ def text_processing(text, remove_punctuation=True, stemming=True, remove_stopwor
     # 'hello' => [u'hello']
     # 'hello. world.' => [u'hello.', u'world.']
     # 
-    # Therefore we need to continue handling a list, namely the sentences variable
+    # Therefore, we need to continue handling a list, namely the sentences variable
     sentences = sentence_tokenizer.tokenize(text)
     
     # If desired, the user can no go ahead and remove punctuation from all sentences
