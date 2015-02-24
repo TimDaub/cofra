@@ -18,16 +18,21 @@ This wrapper has been portet to ConceptNet5 by Tim Daubenschuetz
 
 import urllib, urllib2
 from requests_futures.sessions import FuturesSession
+from utils import get_config
 
 try:
     import json
 except:
     import simplejson as json
 
-SERVER_URL = 'http://192.168.59.103'
-API_URL = 'http://192.168.59.103/data'
 CLIENT_VERSION = '1'
-CONCEPT_NET_VERSION = '5.3'
+
+# Emotext specific parameters, used to enable the library to be run locally
+SERVER_URL = get_config('conceptnet5_parameters', 'SERVER_URL')
+API_URL = get_config('conceptnet5_parameters', 'API_URL')
+CONCEPT_NET_VERSION = get_config('conceptnet5_parameters', 'VERSION')
+REQ_LIMIT = get_config('conceptnet5_parameters', 'REQ_LIMIT')
+
 TYPES = {
     'assertion': 'a',
     'concept': 'c',
@@ -227,7 +232,7 @@ def _get_json(*url_parts):
     This method has been updated and now uses ConceptNet5 syntax to access the web-API
     """
     session = FuturesSession()
-    url = API_URL + '/' + CONCEPT_NET_VERSION + '/' + '/'.join(urllib2.quote(p.encode('utf-8')) for p in url_parts) + '?limit=10'
+    url = API_URL + '/' + CONCEPT_NET_VERSION + '/' + '/'.join(urllib2.quote(p.encode('utf-8')) for p in url_parts) + '?limit=' + REQ_LIMIT
     print 'Looking up: ' + url
     return session.get(url)
 

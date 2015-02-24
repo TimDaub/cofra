@@ -11,7 +11,14 @@ connections between a specific token and the entity 'Emotion'.
 
 from models.node import Node
 from models.sets import OrderedSet
+
 from math import pow
+
+from utils import get_config
+
+from nltk.tokenize.punkt import PunktSentenceTokenizer, PunktParameters
+from nltk.tokenize import RegexpTokenizer
+from nltk.stem.snowball import SnowballStemmer
 
 LANG_TO_CODE = {
     'english': 'en',
@@ -19,9 +26,8 @@ LANG_TO_CODE = {
     'french': 'fr'
 }
 
-MAX_DEPTH = 10
-
-MIN_WEIGHT = 2
+MAX_DEPTH = get_config('emotext_graph_search', 'MAX_DEPTH', 'getint')
+MIN_WEIGHT = get_config('emotext_graph_search', 'MIN_WEIGHT', 'getint')
 
 EMOTIONS = set(["love", "anger", "fear", "hate", "happiness", "pleasant", "sadness", "pity", "shame", "ecstasy", "boredom", "love", "cry", "happy", "jealousy", "joy", "surprise", "regret", "frustration", "sorrow", "melancholy", "awe", "fear", "anger", "joy"])
 
@@ -42,6 +48,67 @@ def lang_name_to_code(lang_name='english'):
         print 'Unfortunately, no lang_code is present for this language.'
         print 'This may be adjusted in apis/emotext.py: LANG_TO_CODE'
         return None
+
+def text_processing(text, remove_punctuation=True, stemming=True, remove_stopwords=True, language='english'):
+    """
+    This function enables general text processing.
+    It features:
+        * Tokenization on sentence level
+        * Tokenization on word level
+        * Punctuation removal
+        * Stemming (and stopword removal)
+        * Conversion to lower case
+
+    The language parameter is only required, if stemming and removal of stopwords are desired.
+    """
+
+    # Texts often contain punctuation characters.
+    # While we'd like to remove them from our data set, their information shouldn't be lost, as
+    # it would enable us to handle negation in text later on.
+    # 
+    # An example:
+    # Given the sentence: 'The movie was not bad.', we could convert all
+    # adjectives in the sentence to antonyms and remove all negations.
+    # Afterwards, the sentence would read 'The movie was good', where 'good'
+    # is the antonym of 'bad'.
+    # 
+    # Therefore, punctuation information should not be lost throughout the process of
+    # processing the text with NLP.
+    sentence_tokenizer = PunktSentenceTokenizer(PunktParameters())
+    # tokenize always returns a list of strings devided by punctuation characters
+    # 
+    # 'hello' => [u'hello']
+    # 'hello. world.' => [u'hello.', u'world.']
+    # 
+    # Therefore we need to continue handling a list, namely the sentences variable
+    sentences = sentence_tokenizer.tokenize(text)
+    
+    # If desired, the user can no go ahead and remove punctuation from all sentences
+    if remove_punctuation:
+        # This tokenizer simply removes every character or word which
+        # lenght is < 2 and is not a alphabetic one
+        punct_rm_tokenizer = RegexpTokenizer(r'\w{2,}')
+        # In this case, tokenize will return a list of every word in the sentence
+        # 
+        # [u'hello'] => [[u'hello']]
+        # [u'hello', u'this is another sentence'] => [[u'hello'], [u'this', u'is', u'another', u'sentence']]
+        # 
+        # Therefore, in the next step we need to handle a list of lists
+        sentences = [punct_rm_tokenizer.tokenize(s) for s in sentences]
+    
+    # Next, we want to stem on a words basis
+    # What this does for example is convert every word into lowercase, remove morphological
+    # meanings, and so on.
+    if stemming:
+        # If desired, stopwords such as 'i', 'me', 'my', 'myself', 'we' can be removed
+        # from the text.
+        stemmer = SnowballStemmer(language, ignore_stopwords=not remove_stopwords)
+        sentences = [[stemmer.stem(w) for w in sentence] for sentence in sentences]
+    else:
+        # If stemming is not desired, all words are at least converted into lower case
+        sentences = [[w.lower() for w in sentence] for sentence in sentences]
+
+    return sentences
 
 def text_to_emotion(token_list, language='english'):
     """
