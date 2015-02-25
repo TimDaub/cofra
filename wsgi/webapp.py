@@ -21,10 +21,12 @@ class WSGI():
         """
         json_data = request.get_json()
         # cast all body data to a Message object
-        message = Message(json_data['entity_name'], json_data['message'], json_data['date'], json_data['language'])
+        message = Message(json_data['entity_name'], json_data['text'], json_data['date'], json_data['language'])
         # process text via Message object method that uses tokenization, stemming, punctuation removal and so on...
-        text_processing(message.message, stemming=False)
-        # message_node = text_to_emotion(message.message, message.language)
+        message.text = " ".join([" ".join([w for w in s]) \
+                                    for s in \
+                                    text_processing(message.text, stemming=False)]) \
+                                    .split()
+        message_node = text_to_emotion(message.text, message.language)
         # dump processed data back to the client
-        return 'OK'
-        #return json.dumps(message_node, cls=NodeEncoder)
+        return json.dumps(message_node, cls=NodeEncoder)

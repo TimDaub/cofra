@@ -24,13 +24,13 @@ def test_post_to_entities():
         r = requests.post(base_url + '/entities/' + message.entity_name, \
             data=json.dumps(message.__dict__), \
             headers=headers)
-        # res_dict = json.loads(r.text)
+        res_dict = json.loads(r.text)
         assert r.status_code <= 200
         # assert res_dict['entity_name'] == message.entity_name
         # assert type(res_dict['message']) == type([])
         # assert len(res_dict['message']) > 0
         # assert res_dict['date'] == message.date
-        # print res_dict
+        print res_dict
     
 
 

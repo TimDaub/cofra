@@ -4,9 +4,9 @@ from nltk.tokenize import RegexpTokenizer
 from nltk.stem.snowball import SnowballStemmer
 
 class Message():
-    def __init__(self, entity_name, message, date=datetime.today(), language='english'):
+    def __init__(self, entity_name, text, date=datetime.today(), language='english'):
         self.entity_name = entity_name
-        self.message = message
+        self.text = text
         self.date = date
         self.language = language
 

@@ -20,8 +20,7 @@ from utils import get_config
 from nltk.tokenize.punkt import PunktSentenceTokenizer, PunktParameters
 from nltk.tokenize import RegexpTokenizer
 from nltk.stem.snowball import SnowballStemmer
-from nltk import pos_tag
-from nltk.corpus import wordnet
+from nltk.corpus import stopwords
 
 LANG_TO_CODE = {
     'english': 'en',
@@ -113,18 +112,25 @@ def text_processing(text, remove_punctuation=True, stemming=True, remove_stopwor
         # Therefore, in the next step we need to handle a list of lists
         sentences = [punct_rm_tokenizer.tokenize(s) for s in sentences]
 
+    if remove_stopwords:
+        try:
+            sentences = [[w for w in sentence if not w in stopwords.words(language)] \
+                                for sentence in sentences]
+        except:
+            print 'There are no stopwords available in this language = ' + language
+
     # Next, we want to stem on a words basis
     # What this does for example is convert every word into lowercase, remove morphological
     # meanings, and so on.
     if stemming:
         # If desired, stopwords such as 'i', 'me', 'my', 'myself', 'we' can be removed
         # from the text.
-        stemmer = SnowballStemmer(language, ignore_stopwords=not remove_stopwords)
+        stemmer = SnowballStemmer(language)
         sentences = [[stemmer.stem(w) for w in sentence] for sentence in sentences]
     else:
         # If stemming is not desired, all words are at least converted into lower case
         sentences = [[w.lower() for w in sentence] for sentence in sentences]
-        
+
     return sentences
 
 def text_to_emotion(token_list, language='english'):
@@ -137,9 +143,10 @@ def text_to_emotion(token_list, language='english'):
     lang_code = lang_name_to_code(language)
     if len(token_list) < 1: 
         raise Exception('The token_list must contain at least one word.')
-    return [build_graph(OrderedSet([Node(t, lang_code, 'c')])) for t in token_list]
+    return [build_graph(OrderedSet([Node(t, lang_code, 'c')]), OrderedSet([])) for t in token_list]
 
-def build_graph(queue, depth=0, used_names=OrderedSet([])):
+def build_graph(queue, used_names ,depth=0):
+    print used_names
     if depth >= MAX_DEPTH:
         return None
     new_queue = OrderedSet(queue)
@@ -157,7 +164,7 @@ def build_graph(queue, depth=0, used_names=OrderedSet([])):
                 if new_edge.name not in used_names and new_edge.weight > MIN_WEIGHT:
                     used_names.add(new_edge.name)
                     new_queue.add(new_edge)
-    return build_graph(new_queue, depth+1, used_names)
+    return build_graph(new_queue, used_names, depth+1)
 
 def calc_nodes_weight(node, weight=[], weight_num=0):
     print node.name + ': %d' % node.weight
