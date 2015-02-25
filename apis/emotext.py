@@ -8,6 +8,7 @@ the texts emotions.
 This is done by algorithms searching the graph structure of concept net for
 connections between a specific token and the entity 'Emotion'.
 """
+import re
 
 from models.node import Node
 from models.sets import OrderedSet
@@ -19,6 +20,8 @@ from utils import get_config
 from nltk.tokenize.punkt import PunktSentenceTokenizer, PunktParameters
 from nltk.tokenize import RegexpTokenizer
 from nltk.stem.snowball import SnowballStemmer
+from nltk import pos_tag
+from nltk.corpus import wordnet
 
 LANG_TO_CODE = {
     'english': 'en',
@@ -49,7 +52,7 @@ def lang_name_to_code(lang_name='english'):
         print 'This may be adjusted in apis/emotext.py: LANG_TO_CODE'
         return None
 
-def text_processing(text, remove_punctuation=True, stemming=True, remove_stopwords=True, language='english'):
+def text_processing(text, remove_punctuation=True, stemming=True, remove_stopwords=True, language='english', replace_with_antonyms='True'):
     """
     This function enables general text processing.
     It features:
@@ -58,7 +61,6 @@ def text_processing(text, remove_punctuation=True, stemming=True, remove_stopwor
         * Punctuation removal
         * Stemming (and stopword removal)
         * Conversion to lower case
-
     The language parameter is only required, if stemming and removal of stopwords are desired.
     """
 
@@ -82,6 +84,21 @@ def text_processing(text, remove_punctuation=True, stemming=True, remove_stopwor
     # 
     # Therefore, we need to continue handling a list, namely the sentences variable
     sentences = sentence_tokenizer.tokenize(text)
+
+    # In the english language at least, 
+    # there are certain stop words, that introduce low-level negation
+    # on a sentence bases.
+    # However, these stop words are often melted with their previous verb
+    # 
+    # isn't = is not
+    # wouldn't = would not
+    # 
+    # This must resolved, as it would not be possible for further functionality of this function to continue
+    # extracting information.
+    # Especially the 'antonymity' functionality wouldn't work without this
+    if language == 'english':
+        sw_pattern = r"(n't)"
+        sentences = [re.sub(sw_pattern, ' not', s) for s in sentences]
     
     # If desired, the user can no go ahead and remove punctuation from all sentences
     if remove_punctuation:
@@ -95,7 +112,7 @@ def text_processing(text, remove_punctuation=True, stemming=True, remove_stopwor
         # 
         # Therefore, in the next step we need to handle a list of lists
         sentences = [punct_rm_tokenizer.tokenize(s) for s in sentences]
-    
+
     # Next, we want to stem on a words basis
     # What this does for example is convert every word into lowercase, remove morphological
     # meanings, and so on.
@@ -107,7 +124,7 @@ def text_processing(text, remove_punctuation=True, stemming=True, remove_stopwor
     else:
         # If stemming is not desired, all words are at least converted into lower case
         sentences = [[w.lower() for w in sentence] for sentence in sentences]
-
+        
     return sentences
 
 def text_to_emotion(token_list, language='english'):

@@ -5,7 +5,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from apis.emotext import text_processing
 
 texts = [
-    "Hello. This is doge! All those punctuation chars should be removed."
+    "Hello. This isn't doge! The movie wasn't heavy."
 ]
 
 def test_text_processing():
