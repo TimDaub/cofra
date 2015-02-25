@@ -31,9 +31,12 @@ class Node():
         if self.name == None:
             raise Exception('Cannot do edge_lookup without nodes name.')
         # lookup token via ConceptNet web-API
-        token_res = lookup(self.type, self.lang_code, self.name).result().json()
+        req = lookup(self.type, self.lang_code, self.name)
+        token_res = req
+        # used_names is a list of objects, however, in order to perform lookups,
+        # we need it to be a list of strings
         # if result has more than 0 edges continue
-        if token_res['numFound'] > 0:
+        if token_res != None and token_res['numFound'] > 0:
             edges = []
             # for every edge, try converting it to a Node object that 
             # can be processed further

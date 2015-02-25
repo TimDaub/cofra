@@ -234,7 +234,8 @@ def _get_json(*url_parts):
     session = FuturesSession()
     url = API_URL + '/' + CONCEPT_NET_VERSION + '/' + '/'.join(urllib2.quote(p.encode('utf-8')) for p in url_parts) + '?limit=' + REQ_LIMIT
     print 'Looking up: ' + url
-    return session.get(url)
+    #return session.get(url)
+    return json.loads(_get_url(url))
 
 def _extend_url(old_url, *url_parts):
     url = old_url + '/'.join(urllib2.quote(str(p)) for p in url_parts) + '/'

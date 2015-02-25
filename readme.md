@@ -47,7 +47,12 @@ However we will still go through the installation process here:
 5. Run the application with a port forward from 10053 to 80, like this: `docker run -it -p 80:10053 rspeer/conceptnet-web`
 6. Now do either `boot2docker ip` or `arp -an` to find your virtual machine's ip
 7. Once you were able to find the right IP, conceptnet5's web interface should appear.
-8. TODO: Config file adjustments
+
+## Configuration
+For convenience, when wanting to adjust parameters concerning for example the emotion extraction process there is the file `config.cfg`.
+After changes on this file, the server must be restarted.
+
+
 
 
 

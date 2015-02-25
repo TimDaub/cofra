@@ -11,7 +11,7 @@ connections between a specific token and the entity 'Emotion'.
 import re
 
 from models.node import Node
-from models.sets import OrderedSet
+from sets import Set
 
 from math import pow
 
@@ -143,35 +143,46 @@ def text_to_emotion(token_list, language='english'):
     lang_code = lang_name_to_code(language)
     if len(token_list) < 1: 
         raise Exception('The token_list must contain at least one word.')
-    return [build_graph(OrderedSet([Node(t, lang_code, 'c')]), OrderedSet([])) for t in token_list]
+    return [build_graph(Set([Node(t, lang_code, 'c')]), Set([]), {
+        'name': t,
+        'emotions': {}
+        }, 0) for t in token_list]
 
-def build_graph(queue, used_names ,depth=0):
-    print used_names
+def build_graph(queue, used_names, info, depth):
     if depth >= MAX_DEPTH:
-        return None
-    new_queue = OrderedSet(queue)
-    # print ', '.join([e.name for e in new_queue])
+        info['emotions'] = calc_percentages(info['emotions'])
+        return info
+    new_queue = Set(queue)
     for edge in queue:
         if edge.name in EMOTIONS:
-            return {edge.name: calc_nodes_weight(edge)}
+            try:
+                info['emotions'][edge.name] = info['emotions'][edge.name] + calc_nodes_weight(edge, edge.name, [], 0)
+            except:
+                info['emotions'][edge.name] = calc_nodes_weight(edge, edge.name, [], 0)
         else:
             new_queue.remove(edge)
             try:
                 edge.edge_lookup(used_names, 'en')
-            except:
+            except Exception as e:
+                print e
                 continue
             for new_edge in edge.edges:
                 if new_edge.name not in used_names and new_edge.weight > MIN_WEIGHT:
                     used_names.add(new_edge.name)
                     new_queue.add(new_edge)
-    return build_graph(new_queue, used_names, depth+1)
+    return build_graph(new_queue, used_names, info, depth+1)
 
-def calc_nodes_weight(node, weight=[], weight_num=0):
+def calc_percentages(emotions):
+    sum_values = sum(emotions.values())
+    return {k: v/sum_values for k, v in emotions.items()}
+
+def calc_nodes_weight(node, emotion, weights, weight_num):
     print node.name + ': %d' % node.weight
     if node.parent == None:
-        for i, n in enumerate(weight):
-            weight_num = weight_num + pow(n, 1/(i+1))
+        for i, n in enumerate(weights):
+            weight_num = weight_num + n * 1/(i+1)
+        print '###########################'
         return weight_num
     else:
-        weight.append(node.weight)
-        return calc_nodes_weight(node.parent, weight)
+        weights.append(node.weight)
+        return calc_nodes_weight(node.parent, emotion, weights, weight_num)
