@@ -2,7 +2,7 @@ import sys
 import os.path
 import re
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from apis.emotext import text_processing, calc_percentages
+from apis.text import text_processing, calc_percentages
 
 texts = [
     "Hello. This isn't doge! The movie wasn't heavy."

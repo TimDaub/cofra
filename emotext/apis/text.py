@@ -10,12 +10,12 @@ connections between a specific token and the entity 'Emotion'.
 """
 import re
 
-from models.node import Node
+from ..models.node import Node
 from sets import Set
 
 from math import pow
 
-from utils import get_config
+from ..utils import get_config
 
 from nltk.tokenize.punkt import PunktSentenceTokenizer, PunktParameters
 from nltk.tokenize import RegexpTokenizer

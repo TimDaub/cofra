@@ -1,10 +1,10 @@
 import json
-from apis.emotext import text_to_emotion, text_processing
+from emotext.apis.text import text_to_emotion, text_processing
 from flask import Flask
 from flask import request
 from flask import jsonify
 from models.message import Message
-from models.node import NodeEncoder
+from emotext.models.node import NodeEncoder
 from datetime import datetime
 app = Flask(__name__)
 

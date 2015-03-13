@@ -18,7 +18,7 @@ This wrapper has been portet to ConceptNet5 by Tim Daubenschuetz
 
 import urllib, urllib2
 from requests_futures.sessions import FuturesSession
-from utils import get_config
+from ..utils import get_config
 
 try:
     import json

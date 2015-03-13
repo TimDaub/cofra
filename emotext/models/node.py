@@ -1,6 +1,6 @@
 import json
-from apis.concept_net_client import lookup
-from utils import extr_from_concept_net_edge
+from ..apis.concept_net_client import lookup
+from ..utils import extr_from_concept_net_edge
 
 class Node():
     def __init__(self, name, lang_code='en', type='c', rel=None, weight=0, edges=[], parent=None):
