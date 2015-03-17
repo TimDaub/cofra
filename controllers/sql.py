@@ -107,7 +107,7 @@ class PersonCtrl(PGCtrl):
         This is just a maintenance function.
         Normally, the data structure implemented is immutable, which means deletions do in fact not happen.
         Therefore, please do not use this function.
-        Only in testing this is used.
+        Only in testing, this is used.
         """
         cur = self.conn.cursor()
 
@@ -121,10 +121,19 @@ class PersonCtrl(PGCtrl):
         cur.close()
         return Person(res)
 
-    def create_new_context(self, person, key, value, parent_id=None):
+    def create_new_context(self, key, value, person=None, con_node=None):
         """
-        
+        A contextual information can be added either to a person or another context node.
+        Therefore, both person OR con_node can be None.
+        This will be checked by a constraint in the DB.
         """
+        if person is None and con_node is None:
+            raise Exception('Insufficient parameters for create_new_context.')
+        cur = self.conn.cursor()
+        # to do
+
+        self.conn.commit()
+        cur.close()
 
     def conv_list_to_obj(self, list, obj_class):
         """
