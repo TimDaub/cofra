@@ -48,9 +48,9 @@ class PGCtrl():
             print "Closing database connection failed"
             print e
 
-class ContentCtrl(PGCtrl):
+class PersonCtrl(PGCtrl):
     """
-    Bundles all methods that can be used to manipulate content on the database PGCtrl provides.
+    Bundles all methods that can be used to manipulate a person on the database PGCtrl provides.
     """
     def __init__(self):
         PGCtrl.__init__(self)
@@ -96,9 +96,11 @@ class ContentCtrl(PGCtrl):
         """
         cur = self.conn.cursor()
 
-        cur.execute('INSERT INTO persons (id, name, timestamp) VALUES (%s, %s) RETURNING id, name, timestamp;', (person.id, person.name, person.timestamp))
+        cur.execute('INSERT INTO persons (id, name, timestamp) VALUES (%s, %s, %s) RETURNING id, name, timestamp;', (person.id, person.name, person.timestamp))
+        res = cur.fetchone()
         self.conn.commit()
         cur.close()
+        return Person(res)
 
     def delete_person(self, person):
         """
@@ -118,6 +120,11 @@ class ContentCtrl(PGCtrl):
         self.conn.commit()
         cur.close()
         return Person(res)
+
+    def create_new_context(self, person, key, value, parent_id=None):
+        """
+        
+        """
 
     def conv_list_to_obj(self, list, obj_class):
         """
