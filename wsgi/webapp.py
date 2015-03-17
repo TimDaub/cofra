@@ -6,16 +6,12 @@ from flask import jsonify
 from models.models import Message
 from emotext.models.models import NodeEncoder
 from datetime import datetime
-from controllers.sql import ContentCtrl
 app = Flask(__name__)
 
 class WSGI():
     def __init__(self):
         """ Starts the web server and sets up configurations """
         app.debug = True
-        dbctrl = ContentCtrl()
-        # dbctrl.create_person("Tim")
-        print dbctrl.fetchall_persons()
         app.run()
 
     @app.route('/entities/<entity_name>', methods=['POST'])
