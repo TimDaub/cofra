@@ -3,15 +3,19 @@ from emotext.apis.text import text_to_emotion, text_processing
 from flask import Flask
 from flask import request
 from flask import jsonify
-from models.message import Message
-from emotext.models.node import NodeEncoder
+from models.models import Message
+from emotext.models.models import NodeEncoder
 from datetime import datetime
+from controllers.sql import ContentCtrl
 app = Flask(__name__)
 
 class WSGI():
     def __init__(self):
         """ Starts the web server and sets up configurations """
         app.debug = True
+        dbctrl = ContentCtrl()
+        # dbctrl.create_person("Tim")
+        print dbctrl.fetchall_persons()
         app.run()
 
     @app.route('/entities/<entity_name>', methods=['POST'])

@@ -2,7 +2,7 @@
 Emotext is framework that helps you extract, save and correlate emotions with contextual information.
 It uses MIT's conceptnet5, nltk and Python.
 
-To enable programming-language-indenpendent usage, Emotext's interface is provided as RESTfully.
+To enable programming-language-independent usage, Emotext's interface is provided as RESTfully.
 
 ## Automatic installation
 Emotext uses `pip` for dependency management. To install all required dependencies, you simply run:
@@ -13,7 +13,7 @@ Additionally, you'll need to download `nltk`'s [language-specific files](#downlo
 
 ## Manual installation
 Python3 is required, as well as `pip` for installing dependencies.
-The webserver is hosted using `flask`. Tests are implemented against the RESTful interface, therefore the `requests` library is required.
+The web server is hosted using `flask`. Tests are implemented against the RESTful interface, therefore the `requests` library is required.
 
     pip install flask
     pip install requests

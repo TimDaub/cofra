@@ -10,12 +10,12 @@ connections between a specific token and the entity 'Emotion'.
 """
 import re
 
-from ..models.node import Node
+from ..models.models import Node
 from sets import Set
 
 from math import pow
 
-from ..utils import get_config
+from ..utils.utils import get_config
 
 from nltk.tokenize.punkt import PunktSentenceTokenizer, PunktParameters
 from nltk.tokenize import RegexpTokenizer
@@ -39,10 +39,10 @@ def lang_name_to_code(lang_name='english'):
     Since we don't want to use those, we've integrated this method
     that allows conversion from language names to language codes.
 
-    If a language code is missing, an exception will be thrown and the user
+    If a language code is missing, an exception will be thrown and the users
     will be notified.
 
-    He can furthermore easily adjust the LANG_TO_CODE constant, to add his own language.
+    They can furthermore easily adjust the LANG_TO_CODE constant, to add his own language.
     """
     try:
         return LANG_TO_CODE[lang_name]
@@ -76,7 +76,7 @@ def text_processing(text, remove_punctuation=True, stemming=True, remove_stopwor
     # Therefore, punctuation information should not be lost throughout the process of
     # processing the text with NLP.
     sentence_tokenizer = PunktSentenceTokenizer(PunktParameters())
-    # tokenize always returns a list of strings devided by punctuation characters
+    # tokenize always returns a list of strings divided by punctuation characters
     # 
     # 'hello' => [u'hello']
     # 'hello. world.' => [u'hello.', u'world.']
@@ -84,7 +84,7 @@ def text_processing(text, remove_punctuation=True, stemming=True, remove_stopwor
     # Therefore, we need to continue handling a list, namely the sentences variable
     sentences = sentence_tokenizer.tokenize(text)
 
-    # In the english language at least, 
+    # In the English language at least, 
     # there are certain stop words, that introduce low-level negation
     # on a sentence bases.
     # However, these stop words are often melted with their previous verb
@@ -94,7 +94,7 @@ def text_processing(text, remove_punctuation=True, stemming=True, remove_stopwor
     # 
     # This must resolved, as it would not be possible for further functionality of this function to continue
     # extracting information.
-    # Especially the 'antonymity' functionality wouldn't work without this
+    # Especially the 'anonymity' functionality wouldn't work without this
     if language == 'english':
         sw_pattern = r"(n't)"
         sentences = [re.sub(sw_pattern, ' not', s) for s in sentences]
@@ -102,7 +102,7 @@ def text_processing(text, remove_punctuation=True, stemming=True, remove_stopwor
     # If desired, the user can no go ahead and remove punctuation from all sentences
     if remove_punctuation:
         # This tokenizer simply removes every character or word which
-        # lenght is < 2 and is not a alphabetic one
+        # length is < 2 and is not a alphabetic one
         punct_rm_tokenizer = RegexpTokenizer(r'\w{2,}')
         # In this case, tokenize will return a list of every word in the sentence
         # 
@@ -138,7 +138,7 @@ def text_to_emotion(token_list, language='english'):
     This method takes a list of tokes and analyzes every one of those
     by using ConceptNet and a specially implemented graph path search algorithm
 
-    It then returns a vector specifing emotional features of the text.
+    It then returns a vector specifying emotional features of the text.
     """
     lang_code = lang_name_to_code(language)
     if len(token_list) < 1: 
@@ -148,29 +148,82 @@ def text_to_emotion(token_list, language='english'):
         'emotions': {}
         }, 0) for t in token_list]
 
-def build_graph(queue, used_names, info, depth):
+def build_graph(token_queue, used_names, emo_vector, depth):
+    """
+    Emotional features are extracted using ConceptNet5.
+
+    We use the provided RESTful interface for lookups.
+    This function is basically a breadth-first graph search.
+    Eventually, it returns a emotion-expressing vector for
+    every token it gets passed.
+    """
+
+    # Overview:
+    # 
+    # Essentially, ConceptNet5 lets us lookup nearly every concept known to man-kind.
+    # A lookup is done using a GET request using the concepts name.
+    # As an example, looking up rollercoaster would be as easy as requesting the following link:
+    # 
+    # http://conceptnet5.media.mit.edu/data/5.3/c/en/rollercoaster
+    # 
+    # Every concept has only two properties:
+    # - numFound: an integer expressing the number of related edges found; and
+    # - edges: concepts that are somehow connected to the original concept.
+    # 
+    # Since this is basically a undirected graph structure, we can traverse it easily by
+    # continuously looking up the edges of a concept.
+    # 
+    # Algorithm:
+    # 
+    # build_graph takes a:
+    # 
+    # - token_queue: set of tokens (normal words) (default: ["a", "list", "of", "words"])
+    # - used_names: a list of names that have been previously looked up
+    # - emo_vector: a key-value object with emotions as keys and absolute or percentual metrics as values
+    # - depth: an integer representing the graph search's depth
+    #
+    #
+    #
+    # Cancellation condition:
+    # 
+    # if MAX_DEPTH is reached, percentages (calc_percentages) are calculated from the absolute values
+    # returned by calc_nodes_weight.
+    # Subsequently, the function returns, hence execution is done.
     if depth >= MAX_DEPTH:
-        info['emotions'] = calc_percentages(info['emotions'])
-        return info
-    new_queue = Set(queue)
-    for edge in queue:
-        if edge.name in EMOTIONS:
+        emo_vector['emotions'] = calc_percentages(emo_vector['emotions'])
+        return emo_vector
+
+    # Graph search part:
+    # 
+    # Since we're actively working on token_queue inside of a for-loop (adding and removing elements)
+    # making a copy that is not enumerated on is necessary.
+    # Here, we make use of a Set as one of its qualities is that it allows no duplicates.
+    # We don't want to lookup the same word twice. Lookups are just too time and CPU consuming.
+    token_queue_copy = Set(token_queue)
+
+    # We traverse through every token in the set
+    # if the token's name does not resemble to one of the searched-for
+    # emotion's name, then we proceed diving further down the graph until MAX_DEPTH is reached.
+    for token in token_queue:
+        
+        # if the token's name resembles 
+        if token.name in EMOTIONS:
             try:
-                info['emotions'][edge.name] = info['emotions'][edge.name] + calc_nodes_weight(edge, edge.name, [], 0)
+                emo_vector['emotions'][token.name] = emo_vector['emotions'][token.name] + calc_nodes_weight(token, token.name, [], 0)
             except:
-                info['emotions'][edge.name] = calc_nodes_weight(edge, edge.name, [], 0)
+                emo_vector['emotions'][token.name] = calc_nodes_weight(token, token.name, [], 0)
         else:
-            new_queue.remove(edge)
+            token_queue_copy.remove(token)
             try:
-                edge.edge_lookup(used_names, 'en')
+                token.edge_lookup(used_names, 'en')
             except Exception as e:
                 print e
                 continue
-            for new_edge in edge.edges:
+            for new_edge in token.edges:
                 if new_edge.name not in used_names and new_edge.weight > MIN_WEIGHT:
                     used_names.add(new_edge.name)
-                    new_queue.add(new_edge)
-    return build_graph(new_queue, used_names, info, depth+1)
+                    token_queue_copy.add(new_edge)
+    return build_graph(token_queue_copy, used_names, emo_vector, depth+1)
 
 def calc_percentages(emotions):
     sum_values = sum(emotions.values())

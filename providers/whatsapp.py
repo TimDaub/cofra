@@ -1,6 +1,6 @@
 import re
-import utils
-from models.message import Message
+import utils.utils
+from models.models import Message
 from datetime import datetime
 
 def get_messages(entity_name, filepath='providers/static/whatsapp_chat.txt', language='english'):
