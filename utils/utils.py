@@ -14,16 +14,3 @@ def conv_to(fn, item=None):
         return conv_to_cur
     else: 
         return conv_to_cur(item)
-
-def get_config(section, key, method_name='get', path=r'config.cfg'):
-    """
-    Reads the 'config.cfg' file in the root directory and allows
-    to select specific values from it that will - if found - be returned.
-    """
-    config_parser = ConfigParser.ConfigParser()
-    config_parser.readfp(open(path))
-    try:
-        return getattr(config_parser, method_name)(section, key)
-    except:
-        print 'Combination of section and key has not been found in config.cfg file.'
-        return None

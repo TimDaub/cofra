@@ -1,16 +1,18 @@
-from utils.utils import get_config
+from controllers.config import CfgParser
 from models.models import Person
 import psycopg2
 
 # Reads configurations from the config.cfg file in root
 # and converts them to psycopg2's format:
 # http://initd.org/psycopg/docs/module.html#psycopg2.connect
+cfg_p = CfgParser(r'config.cfg', 'database')
+
 DATABASE = {
-    "database": get_config('database', 'DBNAME'),
-    "user": get_config('database', 'USER'),
-    "password": get_config('database', 'PASSWORD'),
-    "host": get_config('database', 'HOST'),
-    "port": get_config('database', 'PORT'),
+    "DBNAME": cfg_p.get_key('DBNAME'),
+    "USER": cfg_p.get_key('USER'),
+    "PASSWORD": cfg_p.get_key('PASSWORD'),
+    "HOST": cfg_p.get_key('HOST'),
+    "PORT": cfg_p.get_key('PORT'),
 }
 
 class PGCtrl():
@@ -23,14 +25,14 @@ class PGCtrl():
         open as long as close_con isn't called.
         """
         self.dsn_string = "postgresql://" \
-            + get_config('database', 'USER') \
-            + ":" + get_config('database', 'PASSWORD') \
-            + "@" + get_config('database', 'HOST') \
-            + ":" + get_config('database', 'PORT') \
-            + "/" + get_config('database', 'DBNAME')
+            + DATABASE['USER'] \
+            + ":" + DATABASE['PASSWORD'] \
+            + "@" + DATABASE['HOST'] \
+            + ":" + DATABASE['PORT'] \
+            + "/" + DATABASE['DBNAME']
         try:
             self.conn = psycopg2.connect(self.dsn_string)
-            print "Opened database connection"
+            # print "Opened database connection"
         except Exception as e:
             print "Opening database connection failed"
             print e
@@ -41,7 +43,7 @@ class PGCtrl():
         """
         try:
             self.conn.close()
-            print "Closed database connection"
+            # print "Closed database connection"
         except Exception as e:
             print "Closing database connection failed"
             print e
@@ -74,17 +76,27 @@ class ContentCtrl(PGCtrl):
         cur.close()
         return persons
 
-    def create_person(self, person, with_id=False):
+    def create_new_person(self, name):
         """
-        Receives a Person object and inserts it into the db.
+        A truly new person is created. Essentially this means the primary key 'id' is incremented and
+        timestamp is set to zero.
         """
         cur = self.conn.cursor()
 
-        # person can either be inserted with an id
-        if with_id:
-            cur.execute('INSERT INTO persons (id, name, timestamp) VALUES (%s, %s);', (person.id, person.name, person.timestamp))
-        else: # or without  
-            cur.execute('INSERT INTO persons (name, timestamp) VALUES (%s, %s);', (person.name, person.timestamp))
+        cur.execute('INSERT INTO persons (name, timestamp) VALUES (%s, %s) RETURNING id, name, timestamp;', (name, 0))
+        self.conn.commit()
+        res = cur.fetchone()
+        cur.close()
+        return Person(res)
+
+    def create_person(self, person):
+        """
+        Receives a Person object and inserts it into the db.
+        No new person is created, this is just the designated 'update' process.
+        """
+        cur = self.conn.cursor()
+
+        cur.execute('INSERT INTO persons (id, name, timestamp) VALUES (%s, %s) RETURNING id, name, timestamp;', (person.id, person.name, person.timestamp))
         self.conn.commit()
         cur.close()
 
@@ -98,14 +110,14 @@ class ContentCtrl(PGCtrl):
         cur = self.conn.cursor()
 
         # execute deletion
-        cur.execute('DELETE FROM TABLE persons WHERE id = %s AND timestamp = %s', (person.id, person.timestamp))
+        cur.execute('DELETE FROM persons WHERE id = %s AND timestamp = %s RETURNING id, name, timestamp;', (person.id, person.timestamp))
 
         # and retrieve results
-        res = cur.fetchall()
+        res = cur.fetchone()
 
         self.conn.commit()
         cur.close()
-        return res
+        return Person(res)
 
     def conv_list_to_obj(self, list, obj_class):
         """
