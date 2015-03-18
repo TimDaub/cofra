@@ -1,5 +1,6 @@
 from controllers.config import CfgParser
 from models.models import Person
+from models.models import Context
 import psycopg2
 
 # Reads configurations from the config.cfg file in root
@@ -64,7 +65,8 @@ class PersonCtrl(PGCtrl):
         cur = self.conn.cursor()
 
         # Get all persons from db
-        cur.execute('SELECT id, name, timestamp FROM persons;')
+        cur.execute(""" SELECT id, name, timestamp 
+                        FROM persons;""")
         persons = cur.fetchall()
 
         # Convert all tuples from result into Person objecs
@@ -76,6 +78,12 @@ class PersonCtrl(PGCtrl):
         cur.close()
         return persons
 
+    def fet_pers_id_timestamp(self, id, timestamp):
+        """
+        Convenient little method for fetching a single person with an id and timestamp.
+        """
+        return self.fetchall_persons(lambda p: p.id == id and p.timestamp == timestamp)[0]
+
     def create_new_person(self, name):
         """
         A truly new person is created. Essentially this means the primary key 'id' is incremented and
@@ -83,7 +91,9 @@ class PersonCtrl(PGCtrl):
         """
         cur = self.conn.cursor()
 
-        cur.execute('INSERT INTO persons (name, timestamp) VALUES (%s, %s) RETURNING id, name, timestamp;', (name, 0))
+        cur.execute(""" INSERT INTO persons (name, timestamp) 
+                        VALUES (%s, %s) 
+                        RETURNING id, name, timestamp;""", (name, 0))
         self.conn.commit()
         res = cur.fetchone()
         cur.close()
@@ -96,7 +106,9 @@ class PersonCtrl(PGCtrl):
         """
         cur = self.conn.cursor()
 
-        cur.execute('INSERT INTO persons (id, name, timestamp) VALUES (%s, %s, %s) RETURNING id, name, timestamp;', (person.id, person.name, person.timestamp))
+        cur.execute(""" INSERT INTO persons (id, name, timestamp) 
+                        VALUES (%s, %s, %s) 
+                        RETURNING id, name, timestamp;""", (person.id, person.name, person.timestamp))
         res = cur.fetchone()
         self.conn.commit()
         cur.close()
@@ -112,12 +124,15 @@ class PersonCtrl(PGCtrl):
         cur = self.conn.cursor()
 
         # execute deletion
-        cur.execute('DELETE FROM persons WHERE id = %s AND timestamp = %s RETURNING id, name, timestamp;', (person.id, person.timestamp))
+        cur.execute(""" DELETE FROM persons 
+                        WHERE id = %s AND timestamp = %s 
+                        RETURNING id, name, timestamp;""", (person.id, person.timestamp))
 
-        # and retrieve results
-        res = cur.fetchone()
-
+        # commit results
         self.conn.commit()
+
+         # and retrieve results
+        res = cur.fetchone()
         cur.close()
         return Person(res)
 
@@ -126,14 +141,29 @@ class PersonCtrl(PGCtrl):
         A contextual information can be added either to a person or another context node.
         Therefore, both person OR con_node can be None.
         This will be checked by a constraint in the DB.
-        """
-        if person is None and con_node is None:
-            raise Exception('Insufficient parameters for create_new_context.')
+        """            
         cur = self.conn.cursor()
-        # to do
+        
+        if person is not None and con_node is None:
+            cur.execute(""" INSERT INTO contexts (key, value, personid, persontimestamp) 
+                            VALUES (%s, %s, %s, %s)
+                            RETURNING id, key, value, personid, persontimestamp;""", (key, value, person.id, person.timestamp))
+        elif person is None and con_node is not None:
+            cur.execute(""" INSERT INTO contexts (key, value, contextid)
+                            VALUES (%s, %s, %s)
+                            RETURNING id, key, value, contextid;""", (key, value, con_node.id))
+        else:
+            raise Exception('Insufficient parameters for create_new_context.')
 
         self.conn.commit()
+        res = cur.fetchone()
+
+        # evaluate data from db execution
+        # person is used to initialize a Context object later on
+        con_person = self.fet_pers_id_timestamp(res[3], res[4])
+
         cur.close()
+        return Context(res, con_person)
 
     def conv_list_to_obj(self, list, obj_class):
         """

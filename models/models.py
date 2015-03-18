@@ -37,7 +37,43 @@ class Person():
         elif name and timestamp:
             self.name = name
             self.timestamp = timestamp
-            if id:
-                self.id = id
+            self.id = id
         else:
             raise Exception('Constructor parameters are insufficient.')
+
+    def __repr__(self):
+        """
+        Simply returns a dictionary as representation of the object
+        """
+        return str(self.__dict__)
+
+class Context():
+    """
+    Represents a context node in cofra.
+    Those can either have a person or another context node as a parent.
+    Either one of both must be given, otherwise either the db or this object will yield an error.
+    """
+    def __init__(self, db_result=None, parent=None, id=None, key=None, value=None):
+        # assign parent and if it is not present throw exception
+        if parent is not None:
+            self.parent = parent
+        else:
+            raise Exception('Insufficient parameters for Context object.')
+
+        # assign residual parameters
+        if db_result:
+            self.id = db_result[0]
+            self.key = db_result[1]
+            self.value = db_result[2]    
+        elif id and key and value:
+            self.id = id
+            self.key = key
+            self.value = value
+        else:
+            raise Exception('Insufficient parameters for Context object.')
+
+    def __repr__(self):
+        """
+        Simply returns a dictionary as representation of the object
+        """
+        return str(self.__dict__)
