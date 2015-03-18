@@ -91,7 +91,8 @@ class PersonCtrl(PGCtrl):
 
     def fetch_person_graph(self, person):
         """
-        Fetches a specific person and their related contexts
+        Fetches a specific person and their related contexts.
+        Yields a Person object.
         """
         cur = self.conn.cursor()
 
@@ -107,7 +108,7 @@ class PersonCtrl(PGCtrl):
 
                 SELECT child.id, child.key, child.value, child.personid, child.persontimestamp, child.contextid
                 FROM ContextsRec AS parent, contexts AS child
-                WHERE parent.id = child.contextid   
+                WHERE parent.id = child.contextid 
             )
             SELECT id, key, value, personid, persontimestamp, contextid FROM ContextsRec;
         """, (person.id, person.timestamp))
@@ -115,13 +116,20 @@ class PersonCtrl(PGCtrl):
         # Unfortunately, these will yield as a list.
         con_nodes = cur.fetchall()
 
+        # btw.: close cursor
         cur.close()
-        # Hence, we continue building a graph structure from it.
+
+        # But before we build the graph we need to empty the person
+        # from eventual children
+        person.rmv_children()
+        
+        # Then, we continue building a graph structure from it.
         return self.build_graph(person, con_nodes)
 
     def build_graph(self, person, con_nodes):
         """
         Builds a recursive data structure on a person from a list of context nodes.
+        Yields a Person object.
         """
         for node in con_nodes:
             # all nodes are resultsets from the db
@@ -145,6 +153,7 @@ class PersonCtrl(PGCtrl):
     def build_graph_con_nodes(self, person, con_nodes):
         """
         Adds all remaining con_nodes to a person's graph.
+        Yields a Person object.
         """
         # Once we've added all person-connecting context nodes, we need to continue
         # linking all remaining nodes from the con_nodes list
@@ -167,7 +176,7 @@ class PersonCtrl(PGCtrl):
         else:
             to_insert = con_nodes[0]
             # [5] is contextid
-            parent_node = self.search_tree(person, to_insert[5])
+            parent_node = self.search_graph(person, to_insert[5])
 
             if parent_node:
                 parent_node.add_child(Context(to_insert))
@@ -175,11 +184,11 @@ class PersonCtrl(PGCtrl):
             else:
                 con_nodes.remove(to_insert)
                 con_nodes.append(to_insert)
-            # either way, con_nodes are not empty, yet so
+            # either way, con_nodes are not empty yet, so
             # we need to reiterate once again    
             return self.build_graph_con_nodes(person, con_nodes)
 
-    def search_tree(self, node, id):
+    def search_graph(self, node, id):
         """
         Traverses a tree, looking for an id.
         """
@@ -198,7 +207,7 @@ class PersonCtrl(PGCtrl):
                 if child.id == id:
                     return child
                 else:
-                    return self.search_tree(child, id)
+                    return self.search_graph(child, id)
 
     def create_new_person(self, name):
         """
@@ -218,6 +227,22 @@ class PersonCtrl(PGCtrl):
         cur.close()
         return Person(res)
 
+    def max_timestamp_person(self, person):
+        """
+        Gets a person with an id and yields the row with the highest timestamp.
+        """
+        cur = self.conn.cursor()
+
+        cur.execute("""
+            SELECT MAX(timestamp)
+            FROM persons 
+            WHERE id = %s
+        """, [person.id])
+
+        max_timestamp = cur.fetchone()[0]
+        cur.close()
+        return max_timestamp
+
     def create_person(self, person):
         """
         Receives a Person object and inserts it into the db.
@@ -225,19 +250,74 @@ class PersonCtrl(PGCtrl):
         """
         cur = self.conn.cursor()
 
+        max_timestamp = self.max_timestamp_person(person)
+
         cur.execute("""
             INSERT INTO persons (id, name, timestamp) 
             VALUES (%s, %s, %s) 
             RETURNING id, name, timestamp;
-        """, (person.id, person.name, person.timestamp))
-        res = cur.fetchone()
+        """, (person.id, person.name, max_timestamp+1))
+
+        # fetch new version of person
+        new_version_person = Person(cur.fetchone())
+        new_version_person.add_children(person.children)
+
+        # and update all related children of person
+        self.traverse_graph(new_version_person, self.save_and_update_node)
         self.conn.commit()
         cur.close()
-        return Person(res)
+
+        # update person object to map the graph structure
+        return self.fetch_person_graph(new_version_person)
+
+    def save_and_update_node(self, parent, child):
+        """
+        This method can be used in relation with traverse_graph.
+        It updates a the child's link to its new parent. 
+        """
+        cur = self.conn.cursor()
+        if isinstance(parent, Person):
+            cur.execute("""
+                INSERT INTO contexts (key, value, personid, persontimestamp)
+                VALUES (%s, %s, %s, %s)
+                RETURNING id, key, value, personid, persontimestamp, contextid
+            """, (child.key, child.value, parent.id, parent.timestamp))
+        elif isinstance(parent, Context):
+            cur.execute("""
+                INSERT INTO contexts (key, value, contextid)
+                VALUES (%s, %s, %s)
+                RETURNING id, key, value, personid, persontimestamp, contextid
+            """, (child.key, child.value, parent.id))
+        else:
+            raise Exception('Neither Person nor Context object was used in save_and_update_node to insert content.')
+
+        self.conn.commit()
+
+        # update child and...
+        updated_child = Context(cur.fetchone())
+
+        # add his remaining children
+        updated_child.add_children(child.children)
+
+        cur.close()
+        return updated_child
+
+    def traverse_graph(self, node, fn):
+        """
+        Traverses a graph and calls a given function on every node it sees on its way.
+        """
+        if len(node.children) == 0:
+            return
+        else:
+            for child in node.children:
+                updated_child = fn(node, child)
+                self.traverse_graph(updated_child, fn)
+            return
 
     def delete_person(self, person):
-        """
+        """ 
         This is just a maintenance function.
+
         Normally, the data structure implemented is immutable, which means deletions do in fact not happen.
         Therefore, please do not use this function.
         Only in testing, this is used.

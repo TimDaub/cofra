@@ -46,6 +46,17 @@ class GraphNode():
         """
         self.children.remove(child)
 
+    def add_children(self, children):
+        """
+        Adds a list of children to the graph.
+        Uses the add_child method.
+        """
+        for child in children:
+            self.add_child(child)
+
+    def rmv_children(self):
+        self.children = []
+
 class Person(GraphNode):
     """
     Represents a user in cofra.
@@ -89,12 +100,16 @@ class Context(GraphNode):
             self.id = db_result[0]
             self.key = db_result[1]
             if db_result[2]:
-                self.value = db_result[2]     
+                self.value = db_result[2]
+            else:
+                self.value = None 
         elif id and key:
             self.id = id
             self.key = key
             if value:
                 self.value = value
+            else:
+                self.value = None
         else:
             raise Exception('Insufficient parameters for Context object.')
 

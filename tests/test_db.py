@@ -84,12 +84,11 @@ def test_create_person():
     person but creates a new version - if you will - for a already existing person.
     """
     person = DBCTRL.create_new_person(NAME)
-    person.timestamp += 1
     new_version = DBCTRL.create_person(person)
     assert isinstance(new_version, Person)
     assert new_version.id == person.id
     assert new_version.name == person.name
-    assert new_version.timestamp == person.timestamp # this timestamp was incremented above
+    assert new_version.timestamp == person.timestamp+1 # this timestamp was incremented above
 
     # saved in global variable SAVED_PERSON
     global SAVED_PERSON
@@ -108,8 +107,9 @@ def test_create_new_context_for_context():
     new_context = DBCTRL.create_new_context(CONTEXT.keys()[0], CONTEXT.values()[0], SAVED_PERSON)
 
 def test_fetch_person_graph():
+    test_delete_person()
     graph_person = DBCTRL.fetch_person_graph(Person(None, 63, 'Tim', 1))
-    print graph_person
+    print DBCTRL.create_person(graph_person)
 
 def test_dbctrl_close():
     """

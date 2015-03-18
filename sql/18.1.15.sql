@@ -120,28 +120,12 @@ ALTER TABLE ONLY persons ALTER COLUMN id SET DEFAULT nextval('persons_id_seq'::r
 --
 
 COPY contexts (id, key, value, personid, persontimestamp, contextid) FROM stdin;
-1	Polygon	\N	63	1	\N
-2	Location	\N	\N	\N	1
-3	Longitude	43.2	\N	\N	2
-4	Latitude	42.3	\N	\N	2
-5	Temperature	23	73	1	\N
-6	Temperature	23	73	1	\N
-7	Temperature	23	75	1	\N
-8	Temperature	23	75	1	\N
-9	Temperature	23	77	1	\N
-10	Temperature	23	77	1	\N
-11	Temperature	23	79	1	\N
-12	Temperature	23	79	1	\N
-13	Temperature	23	81	1	\N
-14	Temperature	23	81	1	\N
-15	Temperature	23	83	1	\N
-16	Temperature	23	83	1	\N
-17	Temperature	23	85	1	\N
-18	Temperature	23	85	1	\N
-19	Temperature	23	87	1	\N
-20	Temperature	23	87	1	\N
-21	Temperature	23	89	1	\N
-22	Temperature	23	89	1	\N
+47	Longitude	43.2	\N	\N	46
+48	Latitude	42.3	\N	\N	46
+79	Location	\N	63	2	\N
+80	Latitude	42.3	\N	\N	79
+81	Longitude	43.2	\N	\N	79
+46	Location	\N	63	1	\N
 \.
 
 
@@ -149,7 +133,7 @@ COPY contexts (id, key, value, personid, persontimestamp, contextid) FROM stdin;
 -- Name: contexts_id_seq; Type: SEQUENCE SET; Schema: public; Owner: linkeex
 --
 
-SELECT pg_catalog.setval('contexts_id_seq', 22, true);
+SELECT pg_catalog.setval('contexts_id_seq', 81, true);
 
 
 --
@@ -157,34 +141,9 @@ SELECT pg_catalog.setval('contexts_id_seq', 22, true);
 --
 
 COPY persons (id, name, "timestamp") FROM stdin;
-77	Alice	0
-77	Alice	1
-79	Alice	0
-79	Alice	1
-81	Alice	0
-81	Alice	1
-83	Alice	0
-83	Alice	1
-85	Alice	0
-63	Alice	1
-85	Alice	1
-87	Alice	0
-87	Alice	1
-64	Bob	1
-89	Alice	0
-65	Alice	0
-65	Alice	1
-89	Alice	1
-67	Alice	0
-67	Alice	1
-69	Alice	0
-69	Alice	1
-71	Alice	0
-71	Alice	1
-73	Alice	0
-73	Alice	1
-75	Alice	0
-75	Alice	1
+143	Alice	1
+63	Tim	2
+63	Tim	1
 \.
 
 
@@ -192,7 +151,7 @@ COPY persons (id, name, "timestamp") FROM stdin;
 -- Name: persons_id_seq; Type: SEQUENCE SET; Schema: public; Owner: linkeex
 --
 
-SELECT pg_catalog.setval('persons_id_seq', 89, true);
+SELECT pg_catalog.setval('persons_id_seq', 143, true);
 
 
 --
