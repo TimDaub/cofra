@@ -22,12 +22,39 @@ class Message():
     def __setitem__(self, key, value):
         self[key] = value
 
-class Person():
+class GraphNode():
+    """
+    Represents a node in a graph.
+    """
+    def __init__(self):
+        self.children = []
+
+    def add_child(self, child):
+        """
+        Adds a child node to the nodes's children.
+        """
+        if isinstance(child, Context):
+            self.children.append(child)
+        else:
+            # Since a Person object is always the root node, only Context objects
+            # can ever be added to the graph structure as children.
+            raise Exception('Only Context objects can be added to a graph.')
+
+    def rmv_child(self, child):
+        """
+        Removes a child node from a nodes's children.
+        """
+        self.children.remove(child)
+
+class Person(GraphNode):
     """
     Represents a user in cofra.
     Either db_result or name and timestamp must be given. id doesn't.
     """
     def __init__(self, db_result=None, id=None, name=None, timestamp=None):
+        # Init super class
+        GraphNode.__init__(self)
+
         if db_result:
             # order of a result set:
             # id, name, timestamp
@@ -47,28 +74,27 @@ class Person():
         """
         return str(self.__dict__)
 
-class Context():
+class Context(GraphNode):
     """
     Represents a context node in cofra.
-    Those can either have a person or another context node as a parent.
-    Either one of both must be given, otherwise either the db or this object will yield an error.
+
+    'value' can be None.
     """
-    def __init__(self, db_result=None, parent=None, id=None, key=None, value=None):
-        # assign parent and if it is not present throw exception
-        if parent is not None:
-            self.parent = parent
-        else:
-            raise Exception('Insufficient parameters for Context object.')
+    def __init__(self, db_result=None, id=None, key=None, value=None):
+        # Init super class
+        GraphNode.__init__(self)
 
         # assign residual parameters
         if db_result:
             self.id = db_result[0]
             self.key = db_result[1]
-            self.value = db_result[2]    
-        elif id and key and value:
+            if db_result[2]:
+                self.value = db_result[2]     
+        elif id and key:
             self.id = id
             self.key = key
-            self.value = value
+            if value:
+                self.value = value
         else:
             raise Exception('Insufficient parameters for Context object.')
 

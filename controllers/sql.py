@@ -61,12 +61,17 @@ class PersonCtrl(PGCtrl):
         Fetches all persons from the database.
         As parameter, a function can be received that filters certain persons from the
         list being yielded afterwards.
+
+        This method does not connect persons and their contexts!
         """
         cur = self.conn.cursor()
 
         # Get all persons from db
-        cur.execute(""" SELECT id, name, timestamp 
-                        FROM persons;""")
+        cur.execute("""
+            SELECT id, name, timestamp 
+            FROM persons;
+        """)
+
         persons = cur.fetchall()
 
         # Convert all tuples from result into Person objecs
@@ -84,6 +89,117 @@ class PersonCtrl(PGCtrl):
         """
         return self.fetchall_persons(lambda p: p.id == id and p.timestamp == timestamp)[0]
 
+    def fetch_person_graph(self, person):
+        """
+        Fetches a specific person and their related contexts
+        """
+        cur = self.conn.cursor()
+
+        # recursively getting all contexts of a person with their id and timestamp
+        cur.execute("""
+            WITH RECURSIVE ContextsRec (id, key, value, personid, persontimestamp, contextid) 
+            AS (
+                SELECT init.id, init.key, init.value, init.personid, init.persontimestamp, init.contextid 
+                FROM contexts AS init
+                WHERE init.personid = %s AND init.persontimestamp = %s
+
+            UNION ALL
+
+                SELECT child.id, child.key, child.value, child.personid, child.persontimestamp, child.contextid
+                FROM ContextsRec AS parent, contexts AS child
+                WHERE parent.id = child.contextid   
+            )
+            SELECT id, key, value, personid, persontimestamp, contextid FROM ContextsRec;
+        """, (person.id, person.timestamp))
+
+        # Unfortunately, these will yield as a list.
+        con_nodes = cur.fetchall()
+
+        cur.close()
+        # Hence, we continue building a graph structure from it.
+        return self.build_graph(person, con_nodes)
+
+    def build_graph(self, person, con_nodes):
+        """
+        Builds a recursive data structure on a person from a list of context nodes.
+        """
+        for node in con_nodes:
+            # all nodes are resultsets from the db
+            # therefore we have to work with indexes
+            # A resultset looks like this
+            # 
+            # (1, 'Polygon', None, 63, 1, None)
+            # 
+            # and as a schema
+            # 
+            # (id, key, value, personid, persontimestamp, contextid)
+            # 
+            # if the node has personid and persontimestamp defined, then we want to add
+            # them to the person as a Context obj and delete them from the con_nodes list
+            if node[3] or node[3] == 0 and node[4] or node[4] == 0:
+                person.add_child(Context(node))
+                con_nodes.remove(node)
+
+        return self.build_graph_con_nodes(person, con_nodes)
+
+    def build_graph_con_nodes(self, person, con_nodes):
+        """
+        Adds all remaining con_nodes to a person's graph.
+        """
+        # Once we've added all person-connecting context nodes, we need to continue
+        # linking all remaining nodes from the con_nodes list
+        # 
+        # Algorithm:
+        # 1.    If possible, we take the first node in con_nodes = to_insert
+        #       Else: There are no further nodes to assign, we return person
+        #       
+        # 2. Starting at the root of our graph, we traverse it
+        #       
+        #       either:     until we find to_insert.contextid = trav.id
+        #                   if we find the node, then we trav.add_child(to_insert)
+        #                   and delete it from con_nodes and start from 1. again
+        #       
+        #       or:         we're at the end of the tree
+        #                   then we move to_insert to the back of con_nodes and start
+        #                   from 1. again
+        if len(con_nodes) == 0:
+            return person
+        else:
+            to_insert = con_nodes[0]
+            # [5] is contextid
+            parent_node = self.search_tree(person, to_insert[5])
+
+            if parent_node:
+                parent_node.add_child(Context(to_insert))
+                con_nodes.remove(to_insert)
+            else:
+                con_nodes.remove(to_insert)
+                con_nodes.append(to_insert)
+            # either way, con_nodes are not empty, yet so
+            # we need to reiterate once again    
+            return self.build_graph_con_nodes(person, con_nodes)
+
+    def search_tree(self, node, id):
+        """
+        Traverses a tree, looking for an id.
+        """
+        # Algorithm:
+        # If the node has children:
+        #   iterate them, check 
+        #       if id = child.id then return the child. BINGO!
+        #       else: start looking at the child's children
+        #       
+        # Else the node has no children: return None
+        if len(node.children) == 0:
+            return None
+        else:
+            for child in node.children:
+                # bingo!
+                if child.id == id:
+                    return child
+                else:
+                    return self.search_tree(child, id)
+
     def create_new_person(self, name):
         """
         A truly new person is created. Essentially this means the primary key 'id' is incremented and
@@ -91,9 +207,12 @@ class PersonCtrl(PGCtrl):
         """
         cur = self.conn.cursor()
 
-        cur.execute(""" INSERT INTO persons (name, timestamp) 
-                        VALUES (%s, %s) 
-                        RETURNING id, name, timestamp;""", (name, 0))
+        cur.execute(""" 
+            INSERT INTO persons (name, timestamp) 
+            VALUES (%s, %s) 
+            RETURNING id, name, timestamp;
+        """, (name, 0))
+
         self.conn.commit()
         res = cur.fetchone()
         cur.close()
@@ -106,9 +225,11 @@ class PersonCtrl(PGCtrl):
         """
         cur = self.conn.cursor()
 
-        cur.execute(""" INSERT INTO persons (id, name, timestamp) 
-                        VALUES (%s, %s, %s) 
-                        RETURNING id, name, timestamp;""", (person.id, person.name, person.timestamp))
+        cur.execute("""
+            INSERT INTO persons (id, name, timestamp) 
+            VALUES (%s, %s, %s) 
+            RETURNING id, name, timestamp;
+        """, (person.id, person.name, person.timestamp))
         res = cur.fetchone()
         self.conn.commit()
         cur.close()
@@ -124,9 +245,11 @@ class PersonCtrl(PGCtrl):
         cur = self.conn.cursor()
 
         # execute deletion
-        cur.execute(""" DELETE FROM persons 
-                        WHERE id = %s AND timestamp = %s 
-                        RETURNING id, name, timestamp;""", (person.id, person.timestamp))
+        cur.execute("""
+            DELETE FROM persons 
+            WHERE id = %s AND timestamp = %s 
+            RETURNING id, name, timestamp;
+        """, (person.id, person.timestamp))
 
         # commit results
         self.conn.commit()
@@ -145,13 +268,18 @@ class PersonCtrl(PGCtrl):
         cur = self.conn.cursor()
         
         if person is not None and con_node is None:
-            cur.execute(""" INSERT INTO contexts (key, value, personid, persontimestamp) 
-                            VALUES (%s, %s, %s, %s)
-                            RETURNING id, key, value, personid, persontimestamp;""", (key, value, person.id, person.timestamp))
+            cur.execute("""
+                INSERT INTO contexts (key, value, personid, persontimestamp) 
+                VALUES (%s, %s, %s, %s)
+                RETURNING id, key, value, personid, persontimestamp;
+            """, (key, value, person.id, person.timestamp))
+
         elif person is None and con_node is not None:
-            cur.execute(""" INSERT INTO contexts (key, value, contextid)
-                            VALUES (%s, %s, %s)
-                            RETURNING id, key, value, contextid;""", (key, value, con_node.id))
+            cur.execute("""
+                INSERT INTO contexts (key, value, contextid)
+                VALUES (%s, %s, %s)
+                RETURNING id, key, value, contextid;
+            """, (key, value, con_node.id))
         else:
             raise Exception('Insufficient parameters for create_new_context.')
 
@@ -170,7 +298,3 @@ class PersonCtrl(PGCtrl):
         Converts a list of results to a passed in class.
         """
         return [obj_class(res) for res in list]
-
-
-
-

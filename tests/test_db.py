@@ -100,14 +100,16 @@ def test_create_new_context_for_person():
     Tests is the creation of a new context for a person is possible
     """
     new_context = DBCTRL.create_new_context(CONTEXT.keys()[0], CONTEXT.values()[0], SAVED_PERSON)
-    print new_context
 
 def test_create_new_context_for_context():
     """
     Tests is the creation of a new context for a context node is possible
     """
     new_context = DBCTRL.create_new_context(CONTEXT.keys()[0], CONTEXT.values()[0], SAVED_PERSON)
-    print new_context
+
+def test_fetch_person_graph():
+    graph_person = DBCTRL.fetch_person_graph(Person(None, 63, 'Tim', 1))
+    print graph_person
 
 def test_dbctrl_close():
     """
