@@ -125,6 +125,9 @@ COPY contexts (id, key, value, personid, persontimestamp, contextid) FROM stdin;
 79	Location	\N	63	2	\N
 80	Latitude	42.3	\N	\N	79
 81	Longitude	43.2	\N	\N	79
+84	Location	\N	63	3	\N
+85	Latitude	42.3	\N	\N	84
+86	Longitude	43.2	\N	\N	84
 46	Location	\N	63	1	\N
 \.
 
@@ -133,7 +136,7 @@ COPY contexts (id, key, value, personid, persontimestamp, contextid) FROM stdin;
 -- Name: contexts_id_seq; Type: SEQUENCE SET; Schema: public; Owner: linkeex
 --
 
-SELECT pg_catalog.setval('contexts_id_seq', 81, true);
+SELECT pg_catalog.setval('contexts_id_seq', 86, true);
 
 
 --
@@ -143,6 +146,8 @@ SELECT pg_catalog.setval('contexts_id_seq', 81, true);
 COPY persons (id, name, "timestamp") FROM stdin;
 143	Alice	1
 63	Tim	2
+145	Alice	1
+63	Tim	3
 63	Tim	1
 \.
 
@@ -151,7 +156,7 @@ COPY persons (id, name, "timestamp") FROM stdin;
 -- Name: persons_id_seq; Type: SEQUENCE SET; Schema: public; Owner: linkeex
 --
 
-SELECT pg_catalog.setval('persons_id_seq', 143, true);
+SELECT pg_catalog.setval('persons_id_seq', 145, true);
 
 
 --
