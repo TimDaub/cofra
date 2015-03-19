@@ -1,5 +1,5 @@
 import re
-import utils.utils
+from utils.utils import conv_to
 from models.models import Message
 from datetime import datetime
 
@@ -22,7 +22,7 @@ def get_messages(entity_name, filepath='providers/static/whatsapp_chat.txt', lan
     # uses message_pattern to extract time, date, entity name and message from a line-string
     # then uses map function to convert datatypes of tuple into ints if possible, otherwise leave them as
     # strings
-    parsed_messages = [map(utils.conv_to(int), re.search(message_pattern, l, re.VERBOSE).groups()) \
+    parsed_messages = [map(conv_to(int), re.search(message_pattern, l, re.VERBOSE).groups()) \
                          for l in (open(filepath, 'r')) \
                          if re.match(r'^\n$', l) == None]
     # convert tuples into Message objects and add 2000 years to year as whatsapp notates it YY and not YYYY

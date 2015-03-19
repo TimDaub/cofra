@@ -10,8 +10,6 @@ from models.models import Person
 
 cfg_p = CfgParser(r'tests/static/test_db.cfg', 'test_db')
 
-print os.path.realpath(__file__)
-
 # static variables
 NAME = cfg_p.get_key('NAME')
 CONTEXT = {

@@ -72,5 +72,4 @@ class NodeEncoder(json.JSONEncoder):
     def default(self, obj):
         if not isinstance(obj, Node):
             return super(NodeEncoder, self).default(obj)
-
         return obj.__dict__

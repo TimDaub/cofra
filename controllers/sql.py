@@ -68,8 +68,9 @@ class PersonCtrl(PGCtrl):
 
         # Get all persons from db
         cur.execute("""
-            SELECT id, name, timestamp 
-            FROM persons;
+            SELECT id, name, MAX(timestamp) as timestamp
+            FROM persons 
+            GROUP BY id, name;
         """)
 
         persons = cur.fetchall()
@@ -116,7 +117,7 @@ class PersonCtrl(PGCtrl):
         # Unfortunately, these will yield as a list.
         con_nodes = cur.fetchall()
 
-        # btw.: close cursor
+        # btw: close cursor
         cur.close()
 
         # But before we build the graph we need to empty the person

@@ -2,6 +2,7 @@ from datetime import datetime
 from nltk import word_tokenize
 from nltk.tokenize import RegexpTokenizer
 from nltk.stem.snowball import SnowballStemmer
+import json
 
 class Message():
     """
@@ -56,6 +57,21 @@ class GraphNode():
 
     def rmv_children(self):
         self.children = []
+
+class GraphNodeEncoder(json.JSONEncoder):
+    """
+    Taken from: http://stackoverflow.com/a/1458716/1263876
+
+    The GraphNode object is a recursive data structure that can contain itself,
+    as it holds all it's child GraphNodes.
+
+    Therefore, this method needs to be defined when trying to serialize a GraphNode object
+    to json.
+    """
+    def default(self, obj):
+        if not isinstance(obj, GraphNode):
+            return super(GraphNodeEncoder, self).default(obj)
+        return obj.__dict__
 
 class Person(GraphNode):
     """

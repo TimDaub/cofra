@@ -6,6 +6,8 @@ from flask import jsonify
 from models.models import Message
 from emotext.models.models import NodeEncoder
 from datetime import datetime
+from controllers.sql import PersonCtrl
+from models.models import GraphNodeEncoder
 app = Flask(__name__)
 
 class WSGI():
@@ -30,3 +32,9 @@ class WSGI():
         message_node = text_to_emotion(message.text, message.language)
         # dump processed data back to the client
         return json.dumps(message_node, cls=NodeEncoder)
+
+    @app.route('/persons', methods=['GET'])
+    def get_persons():
+        dbctrl = PersonCtrl()
+        persons = [dbctrl.fetch_person_graph(p) for p in dbctrl.fetchall_persons()]
+        return json.dumps(persons, cls=GraphNodeEncoder)
