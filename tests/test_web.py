@@ -40,9 +40,10 @@ def assert_a_person(person):
     assert person['id']
     assert person['timestamp']
     assert person['name']
-    traverse(person, assert_persons_attrs)
+    assert person['modified']
+    traverse(person, assert_persons_con)
 
-def assert_persons_attrs(node):
+def assert_persons_con(node):
     """
     Asserts a persons attributes using the traverse function.
     """
@@ -61,6 +62,20 @@ def traverse(node, fn):
         for child in node['children']:
             fn(child)
             return traverse(child, fn)
+
+def test_get_persons_versions():
+    """
+    Requests /persons/<id>/versions
+    """
+    for person in PERSONS:
+        r = requests.get(BASE_URL + '/persons/%d/versions' % (person['id']), \
+            headers=HEADERS)
+        res = json.loads(r.text)
+        assert r.status_code <= 200
+        assert type(res) == type([])
+        assert len(res) > 0
+        head = res[0]
+        assert_a_person(head)
 
 def test_get_person():
     """

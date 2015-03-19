@@ -32,7 +32,7 @@ class WSGI():
                                     .split()
         message_node = text_to_emotion(message.text, message.language)
         # dump processed data back to the client
-        return json.dumps(message_node, cls=NodeEncoder)
+        return json.dumps(message_node, cls=NodeEncoder, default=default)
 
     @app.route('/persons', methods=['GET'])
     def get_persons():
@@ -40,9 +40,24 @@ class WSGI():
         Handles the HTTP request for getting all persons from the db.
         """
         dbctrl = PersonCtrl()
-        persons = [dbctrl.fetch_person_graph(p) for p in dbctrl.fetchall_persons()]
+        persons = [dbctrl.fetch_person_graph(p) for p in dbctrl.fetchall_persons(max_timestamp=True)]
         dbctrl.close()
         return json.dumps(persons, cls=GraphNodeEncoder)
+
+    @app.route('/persons/<int:person_id>/versions', methods=['GET'])
+    def get_person_versions(person_id):
+        """
+        Handles the HTTP request for getting a specific persons' versions.
+        """
+        dbctrl = PersonCtrl()
+        persons = dbctrl.fetchall_persons(lambda p: p.id == person_id)
+        if len(persons) > 0:
+            persons = [dbctrl.fetch_person_graph(p) for p in persons]
+            dbctrl.close();
+            return json.dumps(persons, cls=GraphNodeEncoder)
+        else:
+            dbctrl.close()
+            return 'No person found with that (id).'
 
     @app.route('/persons/<int:person_id>/versions/<int:timestamp>', methods=['GET'])
     def get_person(person_id, timestamp):
@@ -57,7 +72,7 @@ class WSGI():
             return json.dumps(person, cls=GraphNodeEncoder)
         else:
             dbctrl.close()
-            return 'Person not found.'
+            return 'No person found with that (id, timestamp)'
         
 
 

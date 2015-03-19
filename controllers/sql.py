@@ -56,7 +56,7 @@ class PersonCtrl(PGCtrl):
     def __init__(self):
         PGCtrl.__init__(self)
 
-    def fetchall_persons(self, filter_fn=None):
+    def fetchall_persons(self, filter_fn=None, max_timestamp=False):
         """
         Fetches all persons from the database.
         As parameter, a function can be received that filters certain persons from the
@@ -67,15 +67,23 @@ class PersonCtrl(PGCtrl):
         cur = self.conn.cursor()
 
         # Get all persons from db
-        cur.execute("""
-            SELECT id, name, timestamp
-            FROM persons;
-        """)
+        if max_timestamp:
+            cur.execute("""
+                SELECT id, name, MAX(timestamp) as timestamp, modified
+                FROM persons 
+                GROUP BY id, name, modified;
+            """)
+        else:
+            cur.execute("""
+                SELECT id, name, timestamp, modified
+                FROM persons;
+            """)
 
         persons = cur.fetchall()
+        
 
-        # Convert all tuples from result into Person objecs
-        persons = self.conv_list_to_obj(persons, Person)
+        # Convert all tuples from result into Person objects
+        persons = [Person(db_res=p) for p in persons]
 
         # if necessary, filter the results for a specific person or group of persons
         if filter_fn is not None:
@@ -83,7 +91,7 @@ class PersonCtrl(PGCtrl):
         cur.close()
         return persons
 
-    def fet_pers_id_timestamp(self, id, timestamp):
+    def fetch_pers_id_timestamp(self, id, timestamp):
         """
         Convenient little method for fetching a single person with an id and timestamp.
         """
@@ -98,23 +106,24 @@ class PersonCtrl(PGCtrl):
 
         # recursively getting all contexts of a person with their id and timestamp
         cur.execute("""
-            WITH RECURSIVE ContextsRec (id, key, value, personid, persontimestamp, contextid) 
+            WITH RECURSIVE ContextsRec (id, key, value, personid, persontimestamp, contextid, modified) 
             AS (
-                SELECT init.id, init.key, init.value, init.personid, init.persontimestamp, init.contextid 
+                SELECT init.id, init.key, init.value, init.personid, init.persontimestamp, init.contextid, init.modified 
                 FROM contexts AS init
                 WHERE init.personid = %s AND init.persontimestamp = %s
 
             UNION ALL
 
-                SELECT child.id, child.key, child.value, child.personid, child.persontimestamp, child.contextid
+                SELECT child.id, child.key, child.value, child.personid, child.persontimestamp, child.contextid, child.modified
                 FROM ContextsRec AS parent, contexts AS child
                 WHERE parent.id = child.contextid 
             )
-            SELECT id, key, value, personid, persontimestamp, contextid FROM ContextsRec;
+            SELECT id, key, value, personid, persontimestamp, contextid, modified FROM ContextsRec;
         """, (person.id, person.timestamp))
 
         # Unfortunately, these will yield as a list.
         con_nodes = cur.fetchall()
+        
 
         # btw: close cursor
         cur.close()
@@ -145,7 +154,7 @@ class PersonCtrl(PGCtrl):
             # if the node has personid and persontimestamp defined, then we want to add
             # them to the person as a Context obj and delete them from the con_nodes list
             if node[3] or node[3] == 0 and node[4] or node[4] == 0:
-                person.add_child(Context(node))
+                person.add_child(Context(db_res=node))
                 con_nodes.remove(node)
 
         return self.build_graph_con_nodes(person, con_nodes)
@@ -179,7 +188,7 @@ class PersonCtrl(PGCtrl):
             parent_node = self.search_graph(person, to_insert[5])
 
             if parent_node:
-                parent_node.add_child(Context(to_insert))
+                parent_node.add_child(Context(db_res=to_insert))
                 con_nodes.remove(to_insert)
             else:
                 con_nodes.remove(to_insert)
@@ -219,13 +228,14 @@ class PersonCtrl(PGCtrl):
         cur.execute(""" 
             INSERT INTO persons (name, timestamp) 
             VALUES (%s, %s) 
-            RETURNING id, name, timestamp;
+            RETURNING id, name, timestamp, modified;
         """, (name, 0))
 
         self.conn.commit()
         res = cur.fetchone()
+        
         cur.close()
-        return Person(res)
+        return Person(db_res=res)
 
     def max_timestamp_person(self, person):
         """
@@ -255,11 +265,13 @@ class PersonCtrl(PGCtrl):
         cur.execute("""
             INSERT INTO persons (id, name, timestamp) 
             VALUES (%s, %s, %s) 
-            RETURNING id, name, timestamp;
+            RETURNING id, name, timestamp, modified;
         """, (person.id, person.name, max_timestamp+1))
 
         # fetch new version of person
-        new_version_person = Person(cur.fetchone())
+        res = cur.fetchone()
+        
+        new_version_person = Person(db_res=res)
         new_version_person.add_children(person.children)
 
         # and update all related children of person
@@ -280,13 +292,13 @@ class PersonCtrl(PGCtrl):
             cur.execute("""
                 INSERT INTO contexts (key, value, personid, persontimestamp)
                 VALUES (%s, %s, %s, %s)
-                RETURNING id, key, value, personid, persontimestamp, contextid
+                RETURNING id, key, value, personid, persontimestamp, contextid, modified
             """, (child.key, child.value, parent.id, parent.timestamp))
         elif isinstance(parent, Context):
             cur.execute("""
                 INSERT INTO contexts (key, value, contextid)
                 VALUES (%s, %s, %s)
-                RETURNING id, key, value, personid, persontimestamp, contextid
+                RETURNING id, key, value, personid, persontimestamp, contextid, modified
             """, (child.key, child.value, parent.id))
         else:
             raise Exception('Neither Person nor Context object was used in save_and_update_node to insert content.')
@@ -294,7 +306,8 @@ class PersonCtrl(PGCtrl):
         self.conn.commit()
 
         # update child and...
-        updated_child = Context(cur.fetchone())
+        
+        updated_child = Context(db_res=cur.fetchone())
 
         # add his remaining children
         updated_child.add_children(child.children)
@@ -328,7 +341,7 @@ class PersonCtrl(PGCtrl):
         cur.execute("""
             DELETE FROM persons 
             WHERE id = %s AND timestamp = %s 
-            RETURNING id, name, timestamp;
+            RETURNING id, name, timestamp, modified;
         """, (person.id, person.timestamp))
 
         # commit results
@@ -336,8 +349,9 @@ class PersonCtrl(PGCtrl):
 
          # and retrieve results
         res = cur.fetchone()
+        
         cur.close()
-        return Person(res)
+        return Person(db_res=res)
 
     def create_new_context(self, key, value, person=None, con_node=None):
         """
@@ -351,30 +365,25 @@ class PersonCtrl(PGCtrl):
             cur.execute("""
                 INSERT INTO contexts (key, value, personid, persontimestamp) 
                 VALUES (%s, %s, %s, %s)
-                RETURNING id, key, value, personid, persontimestamp;
+                RETURNING id, key, value, personid, persontimestamp, modified;
             """, (key, value, person.id, person.timestamp))
 
         elif person is None and con_node is not None:
             cur.execute("""
                 INSERT INTO contexts (key, value, contextid)
                 VALUES (%s, %s, %s)
-                RETURNING id, key, value, contextid;
+                RETURNING id, key, value, contextid, modified;
             """, (key, value, con_node.id))
         else:
             raise Exception('Insufficient parameters for create_new_context.')
 
         self.conn.commit()
         res = cur.fetchone()
+        
 
         # evaluate data from db execution
         # person is used to initialize a Context object later on
-        con_person = self.fet_pers_id_timestamp(res[3], res[4])
+        con_person = self.fetch_pers_id_timestamp(res[3], res[4])
 
         cur.close()
-        return Context(res, con_person)
-
-    def conv_list_to_obj(self, list, obj_class):
-        """
-        Converts a list of results to a passed in class.
-        """
-        return [obj_class(res) for res in list]
+        return Context(db_res=res)

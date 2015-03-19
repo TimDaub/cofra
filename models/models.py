@@ -69,6 +69,8 @@ class GraphNodeEncoder(json.JSONEncoder):
     to json.
     """
     def default(self, obj):
+        if hasattr(obj, 'isoformat'):
+           return obj.isoformat()
         if not isinstance(obj, GraphNode):
             return super(GraphNodeEncoder, self).default(obj)
         return obj.__dict__
@@ -76,22 +78,24 @@ class GraphNodeEncoder(json.JSONEncoder):
 class Person(GraphNode):
     """
     Represents a user in cofra.
-    Either db_result or name and timestamp must be given. id doesn't.
+    Either db_res or name and timestamp must be given. id doesn't.
     """
-    def __init__(self, db_result=None, id=None, name=None, timestamp=None):
+    def __init__(self, db_res=None):
         # Init super class
         GraphNode.__init__(self)
 
-        if db_result:
+        if db_res:
             # order of a result set:
-            # id, name, timestamp
-            self.id = db_result[0]
-            self.name = db_result[1]
-            self.timestamp = db_result[2]
+            # id, name, timestamp, modified
+            self.id = db_res[0]
+            self.name = db_res[1]
+            self.timestamp = db_res[2]
+            if len(db_res) > 3:
+                self.modified = db_res[3]
+            else:
+                self.modified = None
         else:
-            self.name = name
-            self.timestamp = timestamp
-            self.id = id
+            raise Exception('Insufficient parameters for Person object.')
 
     def __repr__(self):
         """
@@ -105,25 +109,23 @@ class Context(GraphNode):
 
     'value' can be None.
     """
-    def __init__(self, db_result=None, id=None, key=None, value=None):
+    def __init__(self, db_res=None):
         # Init super class
         GraphNode.__init__(self)
 
         # assign residual parameters
-        if db_result:
-            self.id = db_result[0]
-            self.key = db_result[1]
-            if db_result[2]:
-                self.value = db_result[2]
-            else:
-                self.value = None 
-        elif id and key:
-            self.id = id
-            self.key = key
-            if value:
-                self.value = value
+        # id, key, value, modified
+        if db_res:
+            self.id = db_res[0]
+            self.key = db_res[1]
+            if db_res[2]:
+                self.value = db_res[2]
             else:
                 self.value = None
+            if len(db_res) > 3:
+                self.modified = db_res[3]
+            else:
+                self.modified = None
         else:
             raise Exception('Insufficient parameters for Context object.')
 

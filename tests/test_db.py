@@ -106,7 +106,7 @@ def test_create_new_context_for_context():
 
 def test_fetch_person_graph():
     test_delete_person()
-    graph_person = DBCTRL.fetch_person_graph(Person(None, 63, 'Tim', 1))
+    graph_person = DBCTRL.fetch_person_graph(Person((63, 'Tim', 1)))
     print DBCTRL.create_person(graph_person)
 
 def test_dbctrl_close():
