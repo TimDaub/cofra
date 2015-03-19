@@ -35,3 +35,23 @@ def test_calc_percentages():
         "happiness": 12.981467725924063
     }
     calc_percentages(emotions)
+
+# def test_post_to_entities():
+#     """ 
+#     Reads all messages of a whatsapp file and posts them as one
+#     entity to the server in order to assert them
+#     """
+    
+#     # read messages from a .txt file by using the whatsapp provider
+#     messages = get_messages('Tim', r'./providers/static/whatsapp_chat.txt', 'english')
+#     for message in messages:
+#         r = requests.post(base_url + '/entities/' + message.entity_name, \
+#             data=json.dumps(message.__dict__), \
+#             headers=headers)
+#         res_dict = json.loads(r.text)
+#         assert r.status_code <= 200
+#         # assert res_dict['entity_name'] == message.entity_name
+#         # assert type(res_dict['message']) == type([])
+#         # assert len(res_dict['message']) > 0
+#         # assert res_dict['date'] == message.date
+#         print res_dict

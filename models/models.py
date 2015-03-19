@@ -88,12 +88,10 @@ class Person(GraphNode):
             self.id = db_result[0]
             self.name = db_result[1]
             self.timestamp = db_result[2]
-        elif name and timestamp:
+        else:
             self.name = name
             self.timestamp = timestamp
             self.id = id
-        else:
-            raise Exception('Constructor parameters are insufficient.')
 
     def __repr__(self):
         """

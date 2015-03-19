@@ -8,7 +8,7 @@ myPath = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, myPath + '/../')
 from providers.whatsapp import get_messages
 from controllers.config import CfgParser
-
+from models.models import Person
 
 cfg_p = CfgParser(r'tests/static/test_db.cfg', 'web')
 
@@ -17,26 +17,7 @@ HEADERS = {
     'Content-type': 'application/json', 
     'Accept': 'text/plain'
 }
-
-# def test_post_to_entities():
-#     """ 
-#     Reads all messages of a whatsapp file and posts them as one
-#     entity to the server in order to assert them
-#     """
-    
-#     # read messages from a .txt file by using the whatsapp provider
-#     messages = get_messages('Tim', r'./providers/static/whatsapp_chat.txt', 'english')
-#     for message in messages:
-#         r = requests.post(base_url + '/entities/' + message.entity_name, \
-#             data=json.dumps(message.__dict__), \
-#             headers=headers)
-#         res_dict = json.loads(r.text)
-#         assert r.status_code <= 200
-#         # assert res_dict['entity_name'] == message.entity_name
-#         # assert type(res_dict['message']) == type([])
-#         # assert len(res_dict['message']) > 0
-#         # assert res_dict['date'] == message.date
-#         print res_dict
+PERSONS = {}
     
 def test_get_persons():
     """
@@ -48,10 +29,18 @@ def test_get_persons():
     assert type(res) == type([])
     if len(res) > 0:
         for person in res:
-            assert person['id']
-            assert person['timestamp']
-            assert person['name']
-            traverse(person, assert_persons_attrs)
+            assert_a_person(person)
+    global PERSONS
+    PERSONS = res
+
+def assert_a_person(person):
+    """
+    This generic function can be used to assert a single person and all its children.
+    """
+    assert person['id']
+    assert person['timestamp']
+    assert person['name']
+    traverse(person, assert_persons_attrs)
 
 def assert_persons_attrs(node):
     """
@@ -72,6 +61,18 @@ def traverse(node, fn):
         for child in node['children']:
             fn(child)
             return traverse(child, fn)
+
+def test_get_person():
+    """
+    Requests /persons/<id>/versions/<timestamp> and checks for correctness
+    """
+    for person in PERSONS:
+        r = requests.get(BASE_URL + '/persons/%d/versions/%d' % (person['id'], person['timestamp']), \
+            headers=HEADERS)
+        res = json.loads(r.text)
+        assert r.status_code <= 200
+        assert type(res) == type({})
+        assert_a_person(res)
 
 if __name__ == '__main__':
     """

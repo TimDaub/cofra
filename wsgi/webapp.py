@@ -4,6 +4,7 @@ from flask import Flask
 from flask import request
 from flask import jsonify
 from models.models import Message
+from models.models import Person
 from emotext.models.models import NodeEncoder
 from datetime import datetime
 from controllers.sql import PersonCtrl
@@ -35,6 +36,31 @@ class WSGI():
 
     @app.route('/persons', methods=['GET'])
     def get_persons():
+        """
+        Handles the HTTP request for getting all persons from the db.
+        """
         dbctrl = PersonCtrl()
         persons = [dbctrl.fetch_person_graph(p) for p in dbctrl.fetchall_persons()]
+        dbctrl.close()
         return json.dumps(persons, cls=GraphNodeEncoder)
+
+    @app.route('/persons/<int:person_id>/versions/<int:timestamp>', methods=['GET'])
+    def get_person(person_id, timestamp):
+        """
+        Handles the HTTP request for getting one specific person from the db.
+        """
+        dbctrl = PersonCtrl()
+        persons = dbctrl.fetchall_persons(lambda p: p.id == person_id and p.timestamp == timestamp)
+        if len(persons) > 0:
+            person = dbctrl.fetch_person_graph(persons[0])
+            dbctrl.close()
+            return json.dumps(person, cls=GraphNodeEncoder)
+        else:
+            dbctrl.close()
+            return 'Person not found.'
+        
+
+
+
+
+

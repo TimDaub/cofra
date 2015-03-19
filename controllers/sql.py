@@ -68,9 +68,8 @@ class PersonCtrl(PGCtrl):
 
         # Get all persons from db
         cur.execute("""
-            SELECT id, name, MAX(timestamp) as timestamp
-            FROM persons 
-            GROUP BY id, name;
+            SELECT id, name, timestamp
+            FROM persons;
         """)
 
         persons = cur.fetchall()
