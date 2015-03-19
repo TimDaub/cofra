@@ -38,7 +38,7 @@ def assert_a_person(person):
     This generic function can be used to assert a single person and all its children.
     """
     assert person['id']
-    assert person['timestamp']
+    assert person['timestamp'] or person['timestamp'] == 0
     assert person['name']
     assert person['modified']
     traverse(person, assert_persons_con)

@@ -81,9 +81,9 @@ class PersonCtrl(PGCtrl):
 
         persons = cur.fetchall()
         
-
+        cols = [desc[0] for desc in cur.description]
         # Convert all tuples from result into Person objects
-        persons = [Person(db_res=p) for p in persons]
+        persons = [Person(db_res=dict(zip(cols, p))) for p in persons]
 
         # if necessary, filter the results for a specific person or group of persons
         if filter_fn is not None:
@@ -124,7 +124,7 @@ class PersonCtrl(PGCtrl):
         # Unfortunately, these will yield as a list.
         con_nodes = cur.fetchall()
         
-
+        cols = [desc[0] for desc in cur.description]
         # btw: close cursor
         cur.close()
 
@@ -133,9 +133,9 @@ class PersonCtrl(PGCtrl):
         person.rmv_children()
         
         # Then, we continue building a graph structure from it.
-        return self.build_graph(person, con_nodes)
+        return self.build_graph(person, con_nodes, cols)
 
-    def build_graph(self, person, con_nodes):
+    def build_graph(self, person, con_nodes, cols):
         """
         Builds a recursive data structure on a person from a list of context nodes.
         Yields a Person object.
@@ -154,12 +154,12 @@ class PersonCtrl(PGCtrl):
             # if the node has personid and persontimestamp defined, then we want to add
             # them to the person as a Context obj and delete them from the con_nodes list
             if node[3] or node[3] == 0 and node[4] or node[4] == 0:
-                person.add_child(Context(db_res=node))
+                person.add_child(Context(db_res=dict(zip(cols, node))))
                 con_nodes.remove(node)
 
-        return self.build_graph_con_nodes(person, con_nodes)
+        return self.build_graph_con_nodes(person, con_nodes, cols)
 
-    def build_graph_con_nodes(self, person, con_nodes):
+    def build_graph_con_nodes(self, person, con_nodes, cols):
         """
         Adds all remaining con_nodes to a person's graph.
         Yields a Person object.
@@ -188,14 +188,14 @@ class PersonCtrl(PGCtrl):
             parent_node = self.search_graph(person, to_insert[5])
 
             if parent_node:
-                parent_node.add_child(Context(db_res=to_insert))
+                parent_node.add_child(Context(db_res=dict(zip(cols, to_insert))))
                 con_nodes.remove(to_insert)
             else:
                 con_nodes.remove(to_insert)
                 con_nodes.append(to_insert)
             # either way, con_nodes are not empty yet, so
             # we need to reiterate once again    
-            return self.build_graph_con_nodes(person, con_nodes)
+            return self.build_graph_con_nodes(person, con_nodes, cols)
 
     def search_graph(self, node, id):
         """
@@ -233,9 +233,9 @@ class PersonCtrl(PGCtrl):
 
         self.conn.commit()
         res = cur.fetchone()
-        
+        cols = [desc[0] for desc in cur.description]
         cur.close()
-        return Person(db_res=res)
+        return Person(db_res=dict(zip(cols, res)))
 
     def max_timestamp_person(self, person):
         """
@@ -270,8 +270,8 @@ class PersonCtrl(PGCtrl):
 
         # fetch new version of person
         res = cur.fetchone()
-        
-        new_version_person = Person(db_res=res)
+        cols = [desc[0] for desc in cur.description]
+        new_version_person = Person(db_res=dict(zip(cols, res)))
         new_version_person.add_children(person.children)
 
         # and update all related children of person
@@ -306,8 +306,9 @@ class PersonCtrl(PGCtrl):
         self.conn.commit()
 
         # update child and...
-        
-        updated_child = Context(db_res=cur.fetchone())
+        res = cur.fetchone()
+        cols = [desc[0] for desc in cur.description]
+        updated_child = Context(db_res=dict(zip(cols, res)))
 
         # add his remaining children
         updated_child.add_children(child.children)
@@ -349,9 +350,9 @@ class PersonCtrl(PGCtrl):
 
          # and retrieve results
         res = cur.fetchone()
-        
+        cols = [desc[0] for desc in cur.description]
         cur.close()
-        return Person(db_res=res)
+        return Person(db_res=dict(zip(cols, res)))
 
     def create_new_context(self, key, value, person=None, con_node=None):
         """
@@ -384,6 +385,6 @@ class PersonCtrl(PGCtrl):
         # evaluate data from db execution
         # person is used to initialize a Context object later on
         con_person = self.fetch_pers_id_timestamp(res[3], res[4])
-
+        cols = [desc[0] for desc in cur.description]
         cur.close()
-        return Context(db_res=res)
+        return Context(db_res=dict(zip(cols, res)))

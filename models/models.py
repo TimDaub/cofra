@@ -86,12 +86,11 @@ class Person(GraphNode):
 
         if db_res:
             # order of a result set:
-            # id, name, timestamp, modified
-            self.id = db_res[0]
-            self.name = db_res[1]
-            self.timestamp = db_res[2]
-            if len(db_res) > 3:
-                self.modified = db_res[3]
+            self.id = db_res['id']
+            self.name = db_res['name']
+            self.timestamp = db_res['timestamp']
+            if 'modified' in db_res:
+                self.modified = db_res['modified']
             else:
                 self.modified = None
         else:
@@ -116,14 +115,14 @@ class Context(GraphNode):
         # assign residual parameters
         # id, key, value, modified
         if db_res:
-            self.id = db_res[0]
-            self.key = db_res[1]
-            if db_res[2]:
-                self.value = db_res[2]
+            self.id = db_res['id']
+            self.key = db_res['key']
+            if 'value' in db_res:
+                self.value = db_res['value']
             else:
                 self.value = None
-            if len(db_res) > 3:
-                self.modified = db_res[3]
+            if 'modified' in db_res:
+                self.modified = db_res['modified']
             else:
                 self.modified = None
         else:
