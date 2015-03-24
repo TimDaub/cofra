@@ -61,6 +61,30 @@ class GraphNode():
         """
         self.children = []
 
+    def rmv_graph_child(self, id):
+        """
+        Removes a child in the graph.
+        This means, that this method also traverses structure and does not
+        only delete a node from its children.
+        """
+        elem = None
+        children_copy = list(self.children)
+
+        if len(self.children) == 0:
+            return
+        else:
+            for child in children_copy:
+                # bingo!
+                if child.id == id:
+                    elem = child
+                    self.children.remove(child)
+                    break
+                else:
+                    pot_elem = child.rmv_graph_child(id)
+                    if pot_elem is not None:
+                        elem = pot_elem
+            return elem
+
     def search_graph(self, id):
         """
         Traverses the structure, looking for an id.

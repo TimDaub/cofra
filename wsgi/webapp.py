@@ -155,4 +155,29 @@ class WSGI():
             data = 'No person found with that (id, timestamp)'
             return make_response(data, 400)
 
+    @app.route('/persons/<int:person_id>/contexts/<int:context_id>', methods=['DELETE'])
+    def remove_context_from_person(person_id, context_id):
+        """
+        Removes a context node from a person and creates a new version of it.
+        """
+        data = None
+        dbctrl = PersonCtrl()
+        persons = dbctrl.fetchall_persons(filter_fn=lambda p: p.id == person_id, max_timestamp=True)
+        if len(persons) > 0:
+            person = dbctrl.fetch_person_graph(persons[0])
+            node_to_remove = person.rmv_graph_child(context_id)
+            if node_to_remove is not None:
+                new_version = dbctrl.create_person(person)
+                data = json.dumps(new_version, cls=GraphNodeEncoder)
+                dbctrl.close()
+                return make_response(data, 200)
+            else:
+                data = 'No context node found with that (id)'
+                dbctrl.close()
+                return make_response(data, 400)
+            
+        else:
+            dbctrl.close()
+            data = 'No person found with that (id, timestamp)'
+            return make_response(data, 400) 
 
