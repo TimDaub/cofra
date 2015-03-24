@@ -141,7 +141,8 @@ class PersonCtrl(PGCtrl):
         Builds a recursive data structure on a person from a list of context nodes.
         Yields a Person object.
         """
-        for node in con_nodes:
+        con_nodes_copy = list(con_nodes)
+        for node in con_nodes_copy:
             # all nodes are resultsets from the db
             # therefore we have to work with indexes
             # A resultset looks like this
@@ -153,11 +154,11 @@ class PersonCtrl(PGCtrl):
             # (id, key, value, personid, persontimestamp, contextid)
             # 
             # if the node has personid and persontimestamp defined, then we want to add
-            # them to the person as a Context obj and delete them from the con_nodes list
+            # them to the person as a Context obj and delete them from the con_nodes list1
             if node[3] or node[3] == 0 and node[4] or node[4] == 0:
                 person.add_child(Context(db_res=dict(zip(cols, node))))
                 con_nodes.remove(node)
-
+                
         return self.build_graph_con_nodes(person, con_nodes, cols)
 
     def build_graph_con_nodes(self, person, con_nodes, cols):
@@ -186,7 +187,7 @@ class PersonCtrl(PGCtrl):
         else:
             to_insert = con_nodes[0]
             # [5] is contextid
-            parent_node = self.search_graph(person, to_insert[5])
+            parent_node = person.search_graph(to_insert[5])
 
             if parent_node:
                 parent_node.add_child(Context(db_res=dict(zip(cols, to_insert))))
@@ -197,27 +198,6 @@ class PersonCtrl(PGCtrl):
             # either way, con_nodes are not empty yet, so
             # we need to reiterate once again    
             return self.build_graph_con_nodes(person, con_nodes, cols)
-
-    def search_graph(self, node, id):
-        """
-        Traverses a tree, looking for an id.
-        """
-        # Algorithm:
-        # If the node has children:
-        #   iterate them, check 
-        #       if id = child.id then return the child. BINGO!
-        #       else: start looking at the child's children
-        #       
-        # Else the node has no children: return None
-        if len(node.children) == 0:
-            return None
-        else:
-            for child in node.children:
-                # bingo!
-                if child.id == id:
-                    return child
-                else:
-                    return self.search_graph(child, id)
 
     def create_new_person(self, name):
         """
@@ -355,7 +335,7 @@ class PersonCtrl(PGCtrl):
         cur.close()
         return Person(db_res=dict(zip(cols, res)))
 
-    def create_new_context(self, key, value, person=None, con_node=None):
+    def create_new_context(self, key, value=None, person=None, con_node=None):
         """
         A contextual information can be added either to a person or another context node.
         Therefore, both person OR con_node can be None.
@@ -381,11 +361,6 @@ class PersonCtrl(PGCtrl):
 
         self.conn.commit()
         res = cur.fetchone()
-        
-
-        # evaluate data from db execution
-        # person is used to initialize a Context object later on
-        con_person = self.fetch_pers_id_timestamp(res[3], res[4])
         cols = [desc[0] for desc in cur.description]
         cur.close()
         return Context(db_res=dict(zip(cols, res)))

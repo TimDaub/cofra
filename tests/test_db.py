@@ -78,7 +78,7 @@ def test_fetch_del_person():
 
 def test_create_person():
     """
-    In contrast to test_create_new_person_and_delete_it this function does not create a 'new'
+    In contrast to test_create_new_person and test_delete_person this function does not create a 'new'
     person but creates a new version - if you will - for a already existing person.
     """
     person = DBCTRL.create_new_person(NAME)
@@ -92,17 +92,17 @@ def test_create_person():
     global SAVED_PERSON
     SAVED_PERSON = person
 
-def test_create_new_context_for_person():
-    """
-    Tests is the creation of a new context for a person is possible
-    """
-    new_context = DBCTRL.create_new_context(CONTEXT.keys()[0], CONTEXT.values()[0], SAVED_PERSON)
+# def test_create_new_context_for_person():
+#     """
+#     Tests is the creation of a new context for a person is possible
+#     """
+#     new_context = DBCTRL.create_new_context(CONTEXT.keys()[0], CONTEXT.values()[0], SAVED_PERSON)
 
-def test_create_new_context_for_context():
-    """
-    Tests is the creation of a new context for a context node is possible
-    """
-    new_context = DBCTRL.create_new_context(CONTEXT.keys()[0], CONTEXT.values()[0], SAVED_PERSON)
+# def test_create_new_context_for_context():
+#     """
+#     Tests is the creation of a new context for a context node is possible
+#     """
+#     new_context = DBCTRL.create_new_context(CONTEXT.keys()[0], CONTEXT.values()[0], SAVED_PERSON)
 
 def test_fetch_person_graph():
     test_delete_person()

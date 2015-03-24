@@ -56,7 +56,35 @@ class GraphNode():
             self.add_child(child)
 
     def rmv_children(self):
+        """
+        Removes all children from the structure.
+        """
         self.children = []
+
+    def search_graph(self, id):
+        """
+        Traverses the structure, looking for an id.
+        """
+        # Algorithm:
+        # If the node has children:
+        #   iterate them, check 
+        #       if id = child.id then return the child. BINGO!
+        #       else: start looking at the child's children
+        #       
+        # Else the node has no children: return None
+        elem = None
+        if len(self.children) == 0:
+            return None
+        else:
+            for child in self.children:
+                # bingo!
+                if child.id == id:
+                    elem = child
+                else:
+                    pot_elem = child.search_graph(id)
+                    if pot_elem is not None:
+                        elem = pot_elem
+            return elem
 
 class GraphNodeEncoder(json.JSONEncoder):
     """
@@ -108,13 +136,13 @@ class Context(GraphNode):
 
     'value' can be None.
     """
-    def __init__(self, db_res=None):
+    def __init__(self, db_res=None, json_res=None):
         # Init super class
         GraphNode.__init__(self)
 
         # assign residual parameters
         # id, key, value, modified
-        if db_res:
+        if db_res is not None and json_res is None:
             self.id = db_res['id']
             self.key = db_res['key']
             if 'value' in db_res:
@@ -125,6 +153,12 @@ class Context(GraphNode):
                 self.modified = db_res['modified']
             else:
                 self.modified = None
+        elif json_res is not None and db_res is None:
+            self.key = json_res['key']
+            if 'value' in json_res and json_res['value'] is not None:
+                self.value = json_res['value']
+            else:
+                self.value = None
         else:
             raise Exception('Insufficient parameters for Context object.')
 
