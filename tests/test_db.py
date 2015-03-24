@@ -8,7 +8,7 @@ from controllers.sql import PersonCtrl
 from controllers.config import CfgParser
 from models.models import Person
 
-cfg_p = CfgParser(r'tests/static/test_db.cfg', 'test_db')
+cfg_p = CfgParser(r'tests/static/test_db.cfg', 'db')
 
 # static variables
 NAME = cfg_p.get_key('NAME')

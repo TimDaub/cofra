@@ -10,9 +10,12 @@ from providers.whatsapp import get_messages
 from controllers.config import CfgParser
 from models.models import Person
 
-cfg_p = CfgParser(r'tests/static/test_db.cfg', 'web')
+cfg_web = CfgParser(r'tests/static/test_db.cfg', 'web')
+cfg_db = CfgParser(r'tests/static/test_db.cfg', 'db')
 
-BASE_URL = cfg_p.get_key('HOST')
+
+BASE_URL = cfg_web.get_key('HOST')
+NAME = cfg_db.get_key('NAME')
 HEADERS = {
     'Content-type': 'application/json', 
     'Accept': 'text/plain'
@@ -89,11 +92,14 @@ def test_get_person():
         assert type(res) == type({})
         assert_a_person(res)
 
-if __name__ == '__main__':
-    """
-    Searches for all functions in this module that 
-    have the substring 'test' in them and calls them
-    """
-    current_module = sys.modules[__name__]
-    fnList = [f for f in dir(current_module) if 'test' in f]
-    map(lambda s: getattr(current_module, s)(), fnList)
+def test_post_person():
+    data = {
+        "name": NAME
+    }
+    r = requests.post(BASE_URL + '/persons', data=json.dumps(data), headers=HEADERS)
+    res = json.loads(r.text)
+    assert r.status_code <= 201
+    assert res['name'] == data['name']
+    assert_a_person(res) 
+
+

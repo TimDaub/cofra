@@ -138,9 +138,14 @@ ALTER TABLE ONLY persons ALTER COLUMN id SET DEFAULT nextval('persons_id_seq'::r
 --
 
 COPY contexts (id, key, value, personid, persontimestamp, contextid, modified) FROM stdin;
-1	Location	\N	63	1	\N	2015-03-19 22:51:37.039527
+157	Polygon	\N	63	2	\N	2015-03-19 23:34:38.468678
+158	Location	\N	\N	\N	157	2015-03-19 23:34:38.470397
+159	Latitude	42.3	\N	\N	158	2015-03-19 23:34:38.471107
+160	Longitude	43.2	\N	\N	158	2015-03-19 23:34:38.47169
 2	Longitude	43.2	\N	\N	1	2015-03-19 22:51:54.908657
 3	Latitude	42.3	\N	\N	1	2015-03-19 22:52:06.274008
+4	Polygon	\N	63	1	\N	2015-03-19 23:31:12.171092
+1	Location	\N	\N	\N	4	2015-03-19 22:51:37.039527
 \.
 
 
@@ -148,7 +153,7 @@ COPY contexts (id, key, value, personid, persontimestamp, contextid, modified) F
 -- Name: contexts_id_seq; Type: SEQUENCE SET; Schema: public; Owner: linkeex
 --
 
-SELECT pg_catalog.setval('contexts_id_seq', 137, true);
+SELECT pg_catalog.setval('contexts_id_seq', 160, true);
 
 
 --
@@ -157,6 +162,8 @@ SELECT pg_catalog.setval('contexts_id_seq', 137, true);
 
 COPY persons (id, name, "timestamp", modified) FROM stdin;
 63	Tim	1	2015-03-19 22:51:15.666199
+191	Alice	1	2015-03-19 23:34:38.461672
+63	Tim	2	2015-03-19 23:34:38.468678
 \.
 
 
@@ -164,7 +171,7 @@ COPY persons (id, name, "timestamp", modified) FROM stdin;
 -- Name: persons_id_seq; Type: SEQUENCE SET; Schema: public; Owner: linkeex
 --
 
-SELECT pg_catalog.setval('persons_id_seq', 177, true);
+SELECT pg_catalog.setval('persons_id_seq', 191, true);
 
 
 --

@@ -68,10 +68,11 @@ class PersonCtrl(PGCtrl):
 
         # Get all persons from db
         if max_timestamp:
+            # evil hack
             cur.execute("""
-                SELECT id, name, MAX(timestamp) as timestamp, modified
+                SELECT id, name, MAX(modified) as modified, MAX(timestamp) as timestamp
                 FROM persons 
-                GROUP BY id, name, modified;
+                GROUP BY id, name;
             """)
         else:
             cur.execute("""
