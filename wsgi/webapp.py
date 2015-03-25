@@ -1,13 +1,21 @@
+# integration of emotext module
+import sys
+import os
+myPath = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, myPath + '/../../')
+
+# normal inports, including emotext imports
 import json
 from emotext.apis.text import text_to_emotion, text_processing
 from flask import Flask
 from flask import request
 from flask import make_response
 from flask import jsonify
-from models.models import Message
 from models.models import Person
 from models.models import Context
 from emotext.models.models import NodeEncoder
+from emotext.models.models import Message
+from emotext.models.persistence import Emotext
 from datetime import datetime
 from controllers.sql import PersonCtrl
 from models.models import GraphNodeEncoder
@@ -25,17 +33,16 @@ class WSGI():
         """
         Handles a POST requests that processes a message json body.
         """
+        
         json_data = request.get_json()
         # cast all body data to a Message object
         message = Message(json_data['entity_name'], json_data['text'], json_data['date'], json_data['language'])
-        # process text via Message object method that uses tokenization, stemming, punctuation removal and so on...
-        message.text = " ".join([" ".join([w for w in s]) \
-                                    for s in \
-                                    text_processing(message.text, stemming=False)]) \
-                                    .split()
-        message_node = text_to_emotion(message.text, message.language)
+
+        et = Emotext()
+        message_node = et.handle_message(message)
+
         # dump processed data back to the client
-        return json.dumps(message_node, cls=NodeEncoder, default=default)
+        return json.dumps(message_node, cls=NodeEncoder)
 
     @app.route('/persons', methods=['GET'])
     def get_persons():
