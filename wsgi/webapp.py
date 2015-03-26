@@ -6,6 +6,7 @@ sys.path.insert(0, myPath + '/../../')
 
 # normal inports, including emotext imports
 import json
+import dateutil.parser
 from emotext.apis.text import text_to_emotion, text_processing
 from flask import Flask
 from flask import request
@@ -19,15 +20,27 @@ from emotext.models.persistence import Emotext
 from datetime import datetime
 from controllers.sql import PersonCtrl
 from models.models import GraphNodeEncoder
-import dateutil.parser
+from utils.cronjob import start_cron
+from controllers.config import CfgParser
+from thread import start_new_thread
 app = Flask(__name__)
+
+
+cfg_p = CfgParser(r'config.cfg', 'cronjob')
+
+# static vars
+CRON_INTERVAL = cfg_p.get_key(key='INTERVAL', method_name='getint')
 
 class WSGI():
     def __init__(self):
         """ Starts the web server and sets up configurations """
+        # start the cronjob that looks for decayed rows in the database
+        start_new_thread(start_cron, (CRON_INTERVAL,))
+
+        # start the web server
         app.debug = True
         app.run()
-
+        
     @app.route('/entities/<entity_name>', methods=['POST'])
     def read_input_text(entity_name=None):
         """
@@ -144,15 +157,19 @@ class WSGI():
         post_context = request.get_json()
         persons = dbctrl.fetchall_persons(filter_fn=lambda p: p.id == person_id, max_timestamp=True)
         if len(persons) > 0:
+
+            # initialize both the person and the context object
             person = dbctrl.fetch_person_graph(persons[0])
             new_context = Context(json_res=post_context)
 
+            # decide on the submitted context nodes parent
             if context_id or context_id == 0:
                 parent_node = person.search_graph(context_id)
                 parent_node.add_child(new_context)
             else:
                 person.add_child(new_context)
             
+            # create new version of the original person
             new_version = dbctrl.create_person(person)
             data = json.dumps(new_version, cls=GraphNodeEncoder)
             dbctrl.close()

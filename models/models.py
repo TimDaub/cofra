@@ -158,12 +158,20 @@ class Context(GraphNode):
                 self.modified = db_res['modified']
             else:
                 self.modified = None
+            if 'decay' in db_res:
+                self.decay = db_res['decay']
+            else:
+                self.decay = None
         elif json_res is not None and db_res is None:
             self.key = json_res['key']
             if 'value' in json_res and json_res['value'] is not None:
                 self.value = json_res['value']
             else:
                 self.value = None
+            if 'decay' in json_res and json_res['decay'] is not None:
+                self.decay = json_res['decay']
+            else:
+                self.decay = None
         else:
             raise Exception('Insufficient parameters for Context object.')
 

@@ -1,7 +1,8 @@
+import psycopg2
 from controllers.config import CfgParser
 from models.models import Person
 from models.models import Context
-import psycopg2
+from datetime import datetime
 
 # Reads configurations from the config.cfg file in root
 # and converts them to psycopg2's format:
@@ -98,7 +99,7 @@ class PersonCtrl(PGCtrl):
         """
         return self.fetchall_persons(lambda p: p.id == id and p.timestamp == timestamp)[0]
 
-    def fetch_person_graph(self, person):
+    def fetch_person_graph(self, person, yield_nodes_list=False):
         """
         Fetches a specific person and their related contexts.
         Yields a Person object.
@@ -107,34 +108,39 @@ class PersonCtrl(PGCtrl):
 
         # recursively getting all contexts of a person with their id and timestamp
         cur.execute("""
-            WITH RECURSIVE ContextsRec (id, key, value, personid, persontimestamp, contextid, modified) 
+            WITH RECURSIVE ContextsRec (id, key, value, personid, persontimestamp, contextid, modified, decay) 
             AS (
-                SELECT init.id, init.key, init.value, init.personid, init.persontimestamp, init.contextid, init.modified 
+                SELECT init.id, init.key, init.value, init.personid, init.persontimestamp, init.contextid, init.modified, init.decay 
                 FROM contexts AS init
                 WHERE init.personid = %s AND init.persontimestamp = %s
 
             UNION ALL
 
-                SELECT child.id, child.key, child.value, child.personid, child.persontimestamp, child.contextid, child.modified
+                SELECT child.id, child.key, child.value, child.personid, child.persontimestamp, child.contextid, child.modified, child.decay
                 FROM ContextsRec AS parent, contexts AS child
                 WHERE parent.id = child.contextid 
             )
-            SELECT id, key, value, personid, persontimestamp, contextid, modified FROM ContextsRec;
+            SELECT id, key, value, personid, persontimestamp, contextid, modified, decay FROM ContextsRec;
         """, (person.id, person.timestamp))
 
-        # Unfortunately, these will yield as a list.
+        # These will yield as a list.
         con_nodes = cur.fetchall()
         
         cols = [desc[0] for desc in cur.description]
         # btw: close cursor
         cur.close()
 
-        # But before we build the graph we need to empty the person
-        # from eventual children
-        person.rmv_children()
-        
-        # Then, we continue building a graph structure from it.
-        return self.build_graph(person, con_nodes, cols)
+        if yield_nodes_list:
+            # we return the list of instantiated Context objects
+            # belonging to a specific person
+            return [Context(db_res=dict(zip(cols, c))) for c in con_nodes]
+        else:
+            # But before we build the graph we need to empty the person
+            # from eventual children
+            person.rmv_children()
+
+            # We continue building a graph structure from it.
+            return self.build_graph(person, con_nodes, cols)
 
     def build_graph(self, person, con_nodes, cols):
         """
@@ -271,16 +277,16 @@ class PersonCtrl(PGCtrl):
         cur = self.conn.cursor()
         if isinstance(parent, Person):
             cur.execute("""
-                INSERT INTO contexts (key, value, personid, persontimestamp)
-                VALUES (%s, %s, %s, %s)
-                RETURNING id, key, value, personid, persontimestamp, contextid, modified
-            """, (child.key, child.value, parent.id, parent.timestamp))
+                INSERT INTO contexts (key, value, personid, persontimestamp, decay)
+                VALUES (%s, %s, %s, %s, %s)
+                RETURNING id, key, value, personid, persontimestamp, contextid, modified, decay
+            """, (child.key, child.value, parent.id, parent.timestamp, child.decay))
         elif isinstance(parent, Context):
             cur.execute("""
-                INSERT INTO contexts (key, value, contextid)
-                VALUES (%s, %s, %s)
-                RETURNING id, key, value, personid, persontimestamp, contextid, modified
-            """, (child.key, child.value, parent.id))
+                INSERT INTO contexts (key, value, contextid, decay)
+                VALUES (%s, %s, %s, %s)
+                RETURNING id, key, value, personid, persontimestamp, contextid, modified, decay
+            """, (child.key, child.value, parent.id, child.decay))
         else:
             raise Exception('Neither Person nor Context object was used in save_and_update_node to insert content.')
 
@@ -335,7 +341,10 @@ class PersonCtrl(PGCtrl):
         cur.close()
         return Person(db_res=dict(zip(cols, res)))
 
-    def create_new_context(self, key, value=None, person=None, con_node=None):
+    # Is not used right now...
+    # 
+    # 
+    def create_new_context(self, key, value=None, person=None, con_node=None, decay=None):
         """
         A contextual information can be added either to a person or another context node.
         Therefore, both person OR con_node can be None.
@@ -345,17 +354,17 @@ class PersonCtrl(PGCtrl):
         
         if person is not None and con_node is None:
             cur.execute("""
-                INSERT INTO contexts (key, value, personid, persontimestamp) 
-                VALUES (%s, %s, %s, %s)
-                RETURNING id, key, value, personid, persontimestamp, modified;
-            """, (key, value, person.id, person.timestamp))
+                INSERT INTO contexts (key, value, personid, persontimestamp, decay) 
+                VALUES (%s, %s, %s, %s, %s)
+                RETURNING id, key, value, personid, persontimestamp, modified, decay;
+            """, (key, value, person.id, person.timestamp, decay))
 
         elif person is None and con_node is not None:
             cur.execute("""
-                INSERT INTO contexts (key, value, contextid)
-                VALUES (%s, %s, %s)
-                RETURNING id, key, value, contextid, modified;
-            """, (key, value, con_node.id))
+                INSERT INTO contexts (key, value, contextid, decay)
+                VALUES (%s, %s, %s, %s)
+                RETURNING id, key, value, contextid, modified, decay;
+            """, (key, value, con_node.id, decay))
         else:
             raise Exception('Insufficient parameters for create_new_context.')
 
@@ -364,3 +373,36 @@ class PersonCtrl(PGCtrl):
         cols = [desc[0] for desc in cur.description]
         cur.close()
         return Context(db_res=dict(zip(cols, res)))
+
+    def delete_decayed_rows(self):
+        """
+        If a row in the table 'contexts' has a date that is older than the current time, it
+        gets deleted and another version is created.
+        """
+
+        # Theoretically, once a context is decayed, a new version of the person must be created.
+        # Since we execute the cronjob only every x minutes or every x hours, this could
+        # lead - considering that we could also process decayed context nodes of old versions of a person -
+        # to an old version being revived.
+        # Therefore we only ever process the newest version of every person, traverse all its 
+        # contextual nodes and look for decayed nodes.
+        # If we find one we delete it and create a new version of the person.
+        
+        # fetch the newest versions of all persons
+        persons = [self.fetch_person_graph(p) for p in self.fetchall_persons(max_timestamp=True)]
+
+        for person in persons:
+            # for every person, we fetch its context nodes
+            con_nodes = self.fetch_person_graph(person=person, yield_nodes_list=True)
+            # filter for decayed nodes
+            con_nodes = filter(lambda c: c.decay is not None and c.decay < datetime.now(), con_nodes)
+            # remove all resulting nodes
+            rmvd_nodes = [person.rmv_graph_child(c.id) for c in con_nodes]
+            print 'Removed nodes due to decay:'
+            print rmvd_nodes
+            # finally, create new version of the person, if any nodes have been removed
+            # else: we do nothing...
+            if len(rmvd_nodes) > 0:
+                new_version = self.create_person(person)
+
+
