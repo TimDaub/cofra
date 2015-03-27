@@ -20,4 +20,5 @@ class CfgParser():
             return getattr(config_parser, method_name)(self.section, key)
         except:
             print 'Combination of section and key has not been found in .cfg file.'
+            print 'key = ' + key + ', section = ' + self.section
             return None

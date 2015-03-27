@@ -1,65 +1,38 @@
 import re
 import sys
 import os.path
+
+
+myPath = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, myPath + '/../')
+from controllers.config import CfgParser
+
+
 myPath = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, myPath + '/../../')
-
 from emotext.apis.text import text_processing
 from emotext.apis.text import calc_percentages
 from emotext.models.persistence import Emotext
-from emotext.models.models import Message
-from emotext.models.persistence import MessageCluster
-from time import sleep
+from emotext.models.persistence import CacheController
+
+
+cfg_et_graph = CfgParser(r'../emotext/config.cfg', 'graph_search')
+cfg_et_cn = CfgParser(r'../emotext/config.cfg', 'conceptnet5_parameters')
+MAX_DEPTH = cfg_et_graph.get_key('MAX_DEPTH', method_name='getint')
+MIN_WEIGHT = cfg_et_graph.get_key('MIN_WEIGHT', method_name='getint')
+REQ_LIMIT = cfg_et_cn.get_key('REQ_LIMIT', method_name='getint')
 
 TEXTS = [
     "Hello. This isn't doge!",
     "Such wow, many pythons!"
 ]
 
-MESSAGES = [
-    Message(entity_name="Testname", text=TEXTS[0]),
-    Message(entity_name="OtherTestname", text=TEXTS[1])
-]
-
-TOLERANCE_TIME = 1
-
-def test_mc_reset_db():
+def test_init_cachectrl():
     """
-    Tries to reset the MessageCluster's database.
+    Tries to initialize a CacheController object and checks his instance type.
     """
-    mc = MessageCluster()
-    mc.reset_db()
-    assert len(mc.db.keys()) == 0
-
-def test_mc_add_message():
-    """
-    Adds multiple messages to the message cluster.
-    """
-    mc = MessageCluster(TOLERANCE_TIME+3) # 4
-    # init message should create a list and start the tolerance counter
-    mc.add_message(MESSAGES[0])
-    sleep(1)
-    # the next message should reset the tolerance counter
-    mc.add_message(MESSAGES[1])
-    # if it doesn't, conversation should be over after sleep(3)
-    sleep(3)
-    res = mc.is_conversation_over()
-    assert res == False
-    sleep(1)
-    res = mc.is_conversation_over()
-    assert res
-
-def test_mc_counter():
-    """
-    Initializing a MessageCluster with a custom time.
-    """
-
-    mc = MessageCluster(TOLERANCE_TIME)
-    mc.start_tolerance()
-    sleep(TOLERANCE_TIME+1)
-
-    res = mc.is_conversation_over()
-    assert res
+    cc = CacheController(max_depth=MAX_DEPTH, min_weight=MIN_WEIGHT, req_limit=REQ_LIMIT)
+    assert isinstance(cc, CacheController)
 
 def test_text_processing():
     """
@@ -96,7 +69,9 @@ def test_calc_percentages():
     for key in emotions.keys():
         assert percentages[key] == actual_percentages[key]
 
-
+# deprecate this function?
+# 
+# 
 # def test_post_to_entities():
 #     """ 
 #     Reads all messages of a whatsapp file and posts them as one
