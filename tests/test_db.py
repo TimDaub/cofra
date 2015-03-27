@@ -107,7 +107,6 @@ def test_create_person():
 def test_fetch_person_graph():
     test_delete_person()
     graph_person = DBCTRL.fetch_person_graph(Person(dict(zip(['id', 'name', 'timestamp'], (63, 'Tim', 1)))))
-    print DBCTRL.create_person(graph_person)
 
 def test_dbctrl_close():
     """
