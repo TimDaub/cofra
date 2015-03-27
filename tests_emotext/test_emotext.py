@@ -23,6 +23,14 @@ MESSAGES = [
 
 TOLERANCE_TIME = 1
 
+def test_mc_reset_db():
+    """
+    Tries to reset the MessageCluster's database.
+    """
+    mc = MessageCluster()
+    mc.reset_db()
+    assert len(mc.db.keys()) == 0
+
 def test_mc_add_message():
     """
     Adds multiple messages to the message cluster.

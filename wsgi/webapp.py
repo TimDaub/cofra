@@ -7,7 +7,6 @@ sys.path.insert(0, myPath + '/../../')
 # normal inports, including emotext imports
 import json
 import dateutil.parser
-from emotext.apis.text import text_to_emotion, text_processing
 from flask import Flask
 from flask import request
 from flask import make_response
