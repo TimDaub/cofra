@@ -262,7 +262,7 @@ class PersonCtrl(PGCtrl):
         new_version_person.add_children(person.children)
 
         # and update all related children of person
-        self.traverse_graph(new_version_person, self.save_and_update_node)
+        new_version_person.traverse_graph(self.save_and_update_node)
         self.conn.commit()
         cur.close()
 
@@ -303,18 +303,6 @@ class PersonCtrl(PGCtrl):
         cur.close()
         return updated_child
 
-    def traverse_graph(self, node, fn):
-        """
-        Traverses a graph and calls a given function on every node it sees on its way.
-        """
-        if len(node.children) == 0:
-            return
-        else:
-            for child in node.children:
-                updated_child = fn(node, child)
-                self.traverse_graph(updated_child, fn)
-            return
-
     def delete_person(self, person):
         """ 
         This is just a maintenance function.
@@ -342,7 +330,7 @@ class PersonCtrl(PGCtrl):
         return Person(db_res=dict(zip(cols, res)))
 
     # Is not used right now...
-    # 
+    # Maybe deprecate later on
     # 
     def create_new_context(self, key, value=None, person=None, con_node=None, decay=None):
         """

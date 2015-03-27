@@ -6,7 +6,6 @@ import requests
 import json
 myPath = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, myPath + '/../')
-from providers.whatsapp import get_messages
 from controllers.config import CfgParser
 from models.models import Person
 

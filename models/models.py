@@ -91,6 +91,18 @@ class GraphNode():
                         elem = pot_elem
             return elem
 
+    def traverse_graph(self, fn):
+        """
+        Traverses the graph and calls a given function on every node it sees on its way.
+        """
+        if len(self.children) == 0:
+            return
+        else:
+            for child in self.children:
+                updated_child = fn(self, child)
+                self.traverse_graph(updated_child, fn)
+            return
+
 class GraphNodeEncoder(json.JSONEncoder):
     """
     Taken from: http://stackoverflow.com/a/1458716/1263876
