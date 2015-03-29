@@ -163,7 +163,7 @@ class WSGI():
 
             # decide on the submitted context nodes parent
             if context_id or context_id == 0:
-                parent_node = person.search_graph(context_id)
+                parent_node = person.search_graph('id', context_id)
                 parent_node.add_child(new_context)
             else:
                 person.add_child(new_context)

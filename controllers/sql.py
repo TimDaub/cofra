@@ -193,7 +193,7 @@ class PersonCtrl(PGCtrl):
         else:
             to_insert = con_nodes[0]
             # [5] is contextid
-            parent_node = person.search_graph(to_insert[5])
+            parent_node = person.search_graph('id' ,to_insert[5])
 
             if parent_node:
                 parent_node.add_child(Context(db_res=dict(zip(cols, to_insert))))
@@ -303,7 +303,7 @@ class PersonCtrl(PGCtrl):
         cur.close()
         return updated_child
 
-    def delete_person(self, person):
+    def delete_person(self, person, del_all_version=True):
         """ 
         This is just a maintenance function.
 
@@ -313,54 +313,27 @@ class PersonCtrl(PGCtrl):
         """
         cur = self.conn.cursor()
 
-        # execute deletion
-        cur.execute("""
-            DELETE FROM persons 
-            WHERE id = %s AND timestamp = %s 
-            RETURNING id, name, timestamp, modified;
-        """, (person.id, person.timestamp))
+        if del_all_version:
+            cur.execute("""
+                DELETE FROM persons 
+                WHERE id = %s 
+                RETURNING id, name, timestamp, modified;
+            """, (person.id,))
+        else:
+            cur.execute("""
+                DELETE FROM persons 
+                WHERE id = %s AND timestamp = %s 
+                RETURNING id, name, timestamp, modified;
+            """, (person.id, person.timestamp))
 
         # commit results
         self.conn.commit()
 
          # and retrieve results
-        res = cur.fetchone()
+        res = cur.fetchall()
         cols = [desc[0] for desc in cur.description]
         cur.close()
-        return Person(db_res=dict(zip(cols, res)))
-
-    # Is not used right now...
-    # Maybe deprecate later on
-    # 
-    def create_new_context(self, key, value=None, person=None, con_node=None, decay=None):
-        """
-        A contextual information can be added either to a person or another context node.
-        Therefore, both person OR con_node can be None.
-        This will be checked by a constraint in the DB.
-        """            
-        cur = self.conn.cursor()
-        
-        if person is not None and con_node is None:
-            cur.execute("""
-                INSERT INTO contexts (key, value, personid, persontimestamp, decay) 
-                VALUES (%s, %s, %s, %s, %s)
-                RETURNING id, key, value, personid, persontimestamp, modified, decay;
-            """, (key, value, person.id, person.timestamp, decay))
-
-        elif person is None and con_node is not None:
-            cur.execute("""
-                INSERT INTO contexts (key, value, contextid, decay)
-                VALUES (%s, %s, %s, %s)
-                RETURNING id, key, value, contextid, modified, decay;
-            """, (key, value, con_node.id, decay))
-        else:
-            raise Exception('Insufficient parameters for create_new_context.')
-
-        self.conn.commit()
-        res = cur.fetchone()
-        cols = [desc[0] for desc in cur.description]
-        cur.close()
-        return Context(db_res=dict(zip(cols, res)))
+        return [Person(db_res=dict(zip(cols, rs))) for rs in res]
 
     def delete_decayed_rows(self):
         """

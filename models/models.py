@@ -66,9 +66,9 @@ class GraphNode():
                         elem = pot_elem
             return elem
 
-    def search_graph(self, id):
+    def search_graph(self, key, value):
         """
-        Traverses the structure, looking for an id.
+        Traverses the structure, looking for a specific key and its value.
         """
         # Algorithm:
         # If the node has children:
@@ -83,10 +83,10 @@ class GraphNode():
         else:
             for child in self.children:
                 # bingo!
-                if child.id == id:
+                if getattr(child, key) == value:
                     elem = child
                 else:
-                    pot_elem = child.search_graph(id)
+                    pot_elem = child.search_graph(key, value)
                     if pot_elem is not None:
                         elem = pot_elem
             return elem
