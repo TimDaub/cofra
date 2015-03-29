@@ -272,7 +272,7 @@ class PersonCtrl(PGCtrl):
     def save_and_update_node(self, parent, child):
         """
         This method can be used in relation with traverse_graph.
-        It updates a the child's link to its new parent. 
+        It updates the child's link to its new parent. 
         """
         cur = self.conn.cursor()
         if isinstance(parent, Person):

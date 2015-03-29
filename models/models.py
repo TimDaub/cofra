@@ -100,7 +100,7 @@ class GraphNode():
         else:
             for child in self.children:
                 updated_child = fn(self, child)
-                self.traverse_graph(updated_child, fn)
+                updated_child.traverse_graph(fn)
             return
 
 class GraphNodeEncoder(json.JSONEncoder):

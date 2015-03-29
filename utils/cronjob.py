@@ -9,7 +9,7 @@ def start_cron(num_of_secs):
     affected - meaning 'decay'(date) < 'now'(date) will simply be deleted.
     """
     s = sched.scheduler(time.time, time.sleep) 
-    s.enter(num_of_secs, 1, delete_decayed, (s, num_of_secs,))
+    s.enter(num_of_secs, 1, delete_decayed, (s, num_of_secs))
     s.run()
 
 def delete_decayed(sc, num_of_secs): 
