@@ -1,10 +1,16 @@
 import shelve
-from emotext.apis.text import text_processing
+import sys
+import os.path
 from controllers.config import CfgParser
-from emotext.models.models import Message
-from emotext.models.models import Conversation
 from datetime import datetime
 from datetime import timedelta
+
+
+myPath = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, myPath + '/../../')
+from emotext.apis.text import text_processing
+from emotext.models.models import Message
+from emotext.models.models import Conversation
 
 cfg_middleware = CfgParser(r'config.cfg', 'et_middleware_clustering')
 

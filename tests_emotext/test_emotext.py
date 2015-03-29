@@ -6,15 +6,14 @@ import os.path
 myPath = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, myPath + '/../')
 from controllers.config import CfgParser
+from models.et_middleware import Emotext
 
 
 myPath = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, myPath + '/../../')
 from emotext.apis.text import text_processing
 from emotext.apis.text import calc_percentages
-from models.et_middelware import Emotext
-from models.et_middelware import CacheController
-
+from emotext.models.models import CacheController
 
 cfg_et_graph = CfgParser(r'../emotext/config.cfg', 'graph_search')
 cfg_et_cn = CfgParser(r'../emotext/config.cfg', 'conceptnet5_parameters')

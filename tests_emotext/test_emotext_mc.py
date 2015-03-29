@@ -1,8 +1,12 @@
 # These tests simulate the cache with a 1 and 4 second 
 # TTL, which means that they can take up to 10 seconds to run.
 # Therefore they are excluded from all other tests
+import sys
+import os.path
+myPath = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, myPath + '/../')
 
-from emotext.models.models import MessageCluster
+from models.et_middleware import MessageCluster
 from emotext.models.models import Message
 from time import sleep
 
