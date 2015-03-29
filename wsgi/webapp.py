@@ -15,7 +15,7 @@ from models.models import Person
 from models.models import Context
 from emotext.models.models import NodeEncoder
 from emotext.models.models import Message
-from emotext.models.persistence import Emotext
+from models.et_middleware import Emotext
 from datetime import datetime
 from controllers.sql import PersonCtrl
 from models.models import GraphNodeEncoder
@@ -45,16 +45,16 @@ class WSGI():
         """
         Handles a POST requests that processes a message json body.
         """
-        
+
         json_data = request.get_json()
         # cast all body data to a Message object
         message = Message(json_data['entity_name'], json_data['text'], json_data['date'], json_data['language'])
-
+        
         et = Emotext()
         message_node = et.handle_message(message)
 
-        # dump processed data back to the client
-        return json.dumps(message_node, cls=NodeEncoder)
+        resp = jsonify({"message": "OK"})
+        return resp
 
     @app.route('/persons', methods=['GET'])
     def get_persons():
@@ -86,7 +86,7 @@ class WSGI():
             return make_response(data, 201)
         else:
             data = 'Specify name in body'
-            return make_response(data, 400)
+            return jsonify
 
     @app.route('/persons/<int:person_id>/versions', methods=['GET'])
     def get_person_versions(person_id):

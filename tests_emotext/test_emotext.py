@@ -12,8 +12,8 @@ myPath = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, myPath + '/../../')
 from emotext.apis.text import text_processing
 from emotext.apis.text import calc_percentages
-from emotext.models.persistence import Emotext
-from emotext.models.persistence import CacheController
+from models.et_middelware import Emotext
+from models.et_middelware import CacheController
 
 
 cfg_et_graph = CfgParser(r'../emotext/config.cfg', 'graph_search')

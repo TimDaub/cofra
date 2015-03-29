@@ -2,7 +2,7 @@
 # TTL, which means that they can take up to 10 seconds to run.
 # Therefore they are excluded from all other tests
 
-from emotext.models.persistence import MessageCluster
+from emotext.models.models import MessageCluster
 from emotext.models.models import Message
 from time import sleep
 
