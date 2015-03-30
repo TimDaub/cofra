@@ -29,13 +29,7 @@ class Emotext():
         Entry point for emotext, processing data.
         Handles a single message object and processes the text in it.
         """
-        # process text via Message object method that uses tokenization, stemming, punctuation removal and so on...
-        message.text = " ".join([" ".join([w for w in s]) \
-            for s in \
-            text_processing(message.text, stemming=False)]) \
-            .split()
 
-        print self.mc
         # We collect all messages in a MessageCluster.
         # Once a conversation is over, we process them using the text_to_emotion function.
         self.mc.add_message(message)

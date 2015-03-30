@@ -39,6 +39,18 @@ class WSGI():
         # start the web server
         app.debug = True
         app.run()
+
+    @app.route('/texts', methods=['POST'])
+    def conv_text():
+        """
+        Simple method to convert text to a emotion vector, without the structural form of an conversation.
+        """
+        json_data = request.get_json()
+        message = Message('Anonymous', json_data['text'], json_data['date'], json_data['language']).to_emotion_vector()
+
+        data = json.dumps(message.text)
+        return make_response(data, 200)
+
         
     @app.route('/entities/<entity_name>', methods=['POST'])
     def read_input_text(entity_name=None):
