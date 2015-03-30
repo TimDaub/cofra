@@ -14,6 +14,7 @@ sys.path.insert(0, myPath + '/../../')
 from emotext.apis.text import text_processing
 from emotext.apis.text import calc_percentages
 from emotext.models.models import CacheController
+from emotext.models.models import Conversation
 
 cfg_et_graph = CfgParser(r'../emotext/config.cfg', 'graph_search')
 cfg_et_cn = CfgParser(r'../emotext/config.cfg', 'conceptnet5_parameters')
@@ -25,6 +26,15 @@ TEXTS = [
     "Hello. This isn't doge!",
     "Such wow, many pythons!"
 ]
+
+def test_interpolating_emotions_vector():
+    """
+    From CacheController we take a bunch of emotion-vectors and submit them to a conversation's 
+    interpolation method, to test it.
+    """
+    cc = CacheController(max_depth=MAX_DEPTH, min_weight=MIN_WEIGHT, req_limit=REQ_LIMIT)
+    c = Conversation([])
+    c.word_interpolation(cc.cache)
 
 def test_init_cachectrl():
     """
