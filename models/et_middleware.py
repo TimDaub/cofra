@@ -32,7 +32,15 @@ class Emotext():
 
         # We collect all messages in a MessageCluster.
         # Once a conversation is over, we process them using the text_to_emotion function.
-        self.mc.add_message(message)
+        eventual_conv = self.mc.add_message(message)
+
+        # if eventual_conv is defined, then the clustering algorithm detected a conversation that
+        # can be returned to the client, otherwise we just return none
+        if eventual_conv is not None:
+            return eventual_conv
+        else:
+            return None
+
         # message_node = text_to_emotion(message.text, message.language)
         # dump processed data back to the client
 
@@ -123,13 +131,20 @@ class MessageCluster():
                 if len(self.get_messages()) > 0:
                     conversation = self.to_conversation_obj()
                     conversation.start()
-                # afterwards, we can move on reseting the database
-                self.reset_db()
-                self.db['messages'] = [message]
+                    conversation.join()
+                    self.reset_db()
+                    self.db['messages'] = [message]
+                    return conversation
+                else:
+                    # afterwards, we can move on reseting the database
+                    self.reset_db()
+                    self.db['messages'] = [message]
+                    return None
             else:
                 messages = self.get_messages()
                 messages.append(message)
                 self.db['messages'] = messages
+                return None
             # In both cases, renew tolerance time
             self.start_tolerance()
         else:

@@ -1,10 +1,10 @@
-# integration of emotext module
+ # integration of emotext module
 import sys
 import os
 myPath = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, myPath + '/../../')
 
-# normal inports, including emotext imports
+# normal imports, including emotext imports
 import json
 import dateutil.parser
 from flask import Flask
@@ -22,6 +22,7 @@ from models.models import GraphNodeEncoder
 from utils.cronjob import start_cron
 from controllers.config import CfgParser
 from thread import start_new_thread
+from utils.utils import crossdomain
 app = Flask(__name__)
 
 
@@ -40,16 +41,22 @@ class WSGI():
         app.debug = True
         app.run()
 
-    @app.route('/texts', methods=['POST'])
+    @app.route('/texts', methods=['POST', 'OPTIONS'])
+    @crossdomain(origin='*')
     def conv_text():
         """
         Simple method to convert text to a emotion vector, without the structural form of an conversation.
         """
-        json_data = request.get_json()
+        if request.form.keys() and type(request.form.keys()) == type([]):
+            json_data = json.loads(request.form.keys()[0])
+        else:
+            json_data = request.get_json()
+
         message = Message('Anonymous', json_data['text'], json_data['date'], json_data['language']).to_emotion_vector()
 
         data = json.dumps(message.text)
-        return make_response(data, 200)
+        resp = make_response(data, 200)
+        return resp
 
         
     @app.route('/entities/<entity_name>', methods=['POST'])
@@ -63,9 +70,12 @@ class WSGI():
         message = Message(json_data['entity_name'], json_data['text'], json_data['date'], json_data['language'])
         
         et = Emotext()
-        message_node = et.handle_message(message)
+        conv = et.handle_message(message)
 
-        resp = jsonify({"message": "OK"})
+        if conv is not None:
+            resp = jsonify(conv)
+        else:
+            resp = jsonify({"message": "Message added to cluster algorithm. OK."})
         return resp
 
     @app.route('/persons', methods=['GET'])
@@ -141,7 +151,7 @@ class WSGI():
             return make_response(data, 200)
 
     @app.route('/persons/<int:person_id>/versions/<int:timestamp>', methods=['GET'])
-    def get_person(person_id, timestamp):
+    def get_specific_person(person_id, timestamp):
         """
         Handles the HTTP request for getting one specific person from the db.
         """
