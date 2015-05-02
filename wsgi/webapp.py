@@ -39,7 +39,7 @@ class WSGI():
 
         # start the web server
         app.debug = True
-        app.run()
+        app.run(host='0.0.0.0')
 
     @app.route('/texts', methods=['POST', 'OPTIONS'])
     @crossdomain(origin='*')
@@ -67,7 +67,7 @@ class WSGI():
 
         json_data = request.get_json()
         # cast all body data to a Message object
-        message = Message(json_data['entity_name'], json_data['text'], json_data['date'], json_data['language'])
+        message = Message(entity_name=json_data['entity_name'], text=json_data['text'], language=json_data['language'])
         
         et = Emotext()
         conv = et.handle_message(message)

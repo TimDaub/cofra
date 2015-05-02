@@ -14,7 +14,6 @@ from emotext.models.models import Conversation
 cfg_middleware = CfgParser(r'config.cfg', 'et_middleware_clustering')
 
 TOLERANCE_TIME = cfg_middleware.get_key('TOLERANCE_TIME', method_name='getint')
-
 class Emotext():
     """
     Represents the utility class for using Emotext.
@@ -102,15 +101,17 @@ class MessageCluster():
         """
         try:
             tolerance_time = self.db['future_time']
-            if tolerance_time < datetime.now():
+	    if tolerance_time < datetime.now():
                 return True
             else:
                 return False
-        except:
+        except Exception as e:
             # When initializing our application from scratch,
             # tolerance_time will naturally be not defined and self.db['tolerance_time']
             # will produce a KeyValue Exception which we catch here and return True
-            return True
+            print 'initializing tolerance_time'
+            print e
+	    return True
 
     def add_message(self, message):
         """
@@ -124,6 +125,7 @@ class MessageCluster():
 
         if isinstance(message, Message):
             if self.is_conversation_over():
+      	  	print 'conversation over'
                 # old conversation is long over, therefore we delete everything
                 # thats left from it and start a new one.
                 # But before that, we need to make sure that process our old conversation (if it exists)
@@ -133,19 +135,22 @@ class MessageCluster():
                     conversation.join()
                     self.reset_db()
                     self.db['messages'] = [message]
+		    self.start_tolerance()
                     return conversation
                 else:
                     # afterwards, we can move on reseting the database
                     self.reset_db()
                     self.db['messages'] = [message]
+		    self.start_tolerance()
                     return None
             else:
+		print 'conversation going on'
                 messages = self.get_messages()
                 messages.append(message)
                 self.db['messages'] = messages
+		self.start_tolerance()
                 return None
             # In both cases, renew tolerance time
-            self.start_tolerance()
         else:
             raise Exception('Only messages of type emotext.models.models.Message can be added.')
 
