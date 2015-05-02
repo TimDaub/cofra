@@ -5,7 +5,6 @@ from controllers.config import CfgParser
 from datetime import datetime
 from datetime import timedelta
 
-
 myPath = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, myPath + '/../../')
 from emotext.apis.text import text_processing
@@ -155,6 +154,7 @@ class MessageCluster():
         Deletes all keys from the database.
         """
         for key in self.db.keys():
+            key = key.encode("utf8")
             del self.db[key]
 
     def to_conversation_obj(self):

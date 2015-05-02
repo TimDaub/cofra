@@ -73,7 +73,7 @@ class WSGI():
         conv = et.handle_message(message)
 
         if conv is not None:
-            resp = jsonify(conv)
+            resp = json.dumps(conv.emotions)
         else:
             resp = jsonify({"message": "Message added to cluster algorithm. OK."})
         return resp
